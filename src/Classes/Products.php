@@ -1,14 +1,13 @@
 <?php
-namespace WeAreHausTech\SyncData\Classes;
+namespace WeAreHausTech\WpProductSync\Classes;
 
-use WeAreHausTech\SyncData\Helpers\CacheHelper;
-use WeAreHausTech\SyncData\Helpers\WpmlHelper;
-use WeAreHausTech\SyncData\Helpers\WpHelper;
+use WeAreHausTech\WpProductSync\Helpers\CacheHelper;
+use WeAreHausTech\WpProductSync\Helpers\WpmlHelper;
+use WeAreHausTech\WpProductSync\Helpers\WpHelper;
 
 class Products
 {
-    public $created = 0;
-    public $updated = 0;
+    public $created = 0;     public $updated = 0;
     public $deleted = 0;
     public $defaultLang = '';
     public $useWpml = false;

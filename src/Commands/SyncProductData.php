@@ -1,19 +1,21 @@
 <?php
 
+namespace WeAreHausTech\WpProductSync\Commands;
 /*
  * WP-CLI Command
  * $ wp sync-products sync
  */
 
-use WeAreHausTech\SyncData\Classes\Products;
-use WeAreHausTech\SyncData\Classes\Taxonomies;
-use WeAreHausTech\SyncData\Classes\Relations;
-use WeAreHausTech\SyncData\Helpers\LockHelper;
-use WeAreHausTech\SyncData\Helpers\WpHelper;
-use WeAreHausTech\SyncData\Helpers\VendureHelper;
+use WeAreHausTech\WpProductSync\Classes\Products;
+use WeAreHausTech\WpProductSync\Classes\Taxonomies;
+use WeAreHausTech\WpProductSync\Classes\Relations;
+use WeAreHausTech\WpProductSync\Helpers\LockHelper;
+use WeAreHausTech\WpProductSync\Helpers\WpHelper;
+use WeAreHausTech\WpProductSync\Helpers\VendureHelper;
 
-class SyncProductData extends WP_CLI_Command
+class SyncProductData extends  \WP_CLI_Command
 {
+
     public function sync()
     {
         LockHelper::abortIfAlreadyRunning();
@@ -31,7 +33,7 @@ class SyncProductData extends WP_CLI_Command
             $vendureProducts = $vendureHelper->getAllProductsFromVendure();
 
             if (!isset($vendureProducts)) {
-                WP_CLI::error('No products found in vendure');
+                \WP_CLI::error('No products found in vendure');
             }
 
             $wpProducts = $wpHelper->getAllProductsFromWp();
@@ -56,9 +58,9 @@ class SyncProductData extends WP_CLI_Command
                 $taxonomiesInstance->deletedTaxonomies
             );
 
-            WP_CLI::success("\n" . $productsSummary . "\n" . $taxonomiesSummary);
+            \WP_CLI::success("\n" . $productsSummary . "\n" . $taxonomiesSummary);
         } catch ( Exception $e ) {
-            WP_CLI::error( "An error occurred: " . $e->getMessage() );
+            \WP_CLI::error( "An error occurred: " . $e->getMessage() );
         } finally {
             // Ensure the lock is cleared
             LockHelper::removeLock();
@@ -68,4 +70,3 @@ class SyncProductData extends WP_CLI_Command
     }
 }
 
-WP_CLI::add_command('sync-products', 'syncProductData');

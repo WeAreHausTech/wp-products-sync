@@ -1,8 +1,8 @@
 <?php
 
-namespace WeAreHausTech\SyncData\Helpers;
+namespace WeAreHausTech\WpProductSync\Helpers;
 
-use WeAreHausTech\SyncData\Helpers\WpmlHelper;
+use WeAreHausTech\WpProductSync\Helpers\WpmlHelper;
 
 class ConfigHelper
 {

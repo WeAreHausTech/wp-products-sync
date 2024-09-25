@@ -1,17 +1,18 @@
 <?php
 
+namespace WeAreHausTech\WpProductSync\Commands;
 /*
  * WP-CLI Command
  * $ wp sync-products delete
  */
 
-use WeAreHausTech\SyncData\Classes\Products;
-use WeAreHausTech\SyncData\Classes\Taxonomies;
-use WeAreHausTech\SyncData\Classes\Relations;
-use WeAreHausTech\SyncData\Helpers\WpHelper;
-use WeAreHausTech\SyncData\Helpers\VendureHelper;
+use WeAreHausTech\WpProductSync\Classes\Products;
+use WeAreHausTech\WpProductSync\Classes\Taxonomies;
+use WeAreHausTech\WpProductSync\Classes\Relations;
+use WeAreHausTech\WpProductSync\Helpers\WpHelper;
+use WeAreHausTech\WpProductSync\Helpers\VendureHelper;
 
-class DeleteAllPosts extends WP_CLI_Command
+class DeleteAllPosts extends  \WP_CLI_Command
 {
 
     public function delete()
@@ -55,8 +56,6 @@ class DeleteAllPosts extends WP_CLI_Command
             $taxonomiesInstance->deletedTaxonomies
         );
 
-        WP_CLI::success("\n" . $productsSummary . "\n" . $taxonomiesSummary);
+        \WP_CLI::success("\n" . $productsSummary . "\n" . $taxonomiesSummary);
     }
 }
-
-WP_CLI::add_command('sync-products', 'deleteAllPosts');

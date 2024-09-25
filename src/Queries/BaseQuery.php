@@ -1,5 +1,5 @@
 <?php
-namespace WeAreHausTech\Queries;
+namespace WeAreHausTech\WpProductSync\Queries;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;

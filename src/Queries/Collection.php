@@ -1,5 +1,5 @@
 <?php
-namespace WeAreHausTech\Queries;
+namespace WeAreHausTech\WpProductSync\Queries;
 class Collection extends BaseQuery
 {
     public function get($lang, $skip, $take, $parentIds = [])

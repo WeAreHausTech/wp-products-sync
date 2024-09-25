@@ -1,8 +1,8 @@
 <?php
 
-namespace WeAreHausTech\SyncData\Helpers;
+namespace WeAreHausTech\WpProductSync\Helpers;
 
-use WeAreHausTech\SyncData\Helpers\WpmlHelper;
+use WeAreHausTech\WpProductSync\Helpers\WpmlHelper;
 
 class VendureHelper
 {
@@ -52,7 +52,7 @@ class VendureHelper
         $allProducts = [];
 
         do {
-            $products = (new \WeAreHausTech\Queries\Product)->get($lang, $skip, $batchSize);
+            $products = (new \WeAreHausTech\WpProductSync\Queries\Product)->get($lang, $skip, $batchSize);
     
             $totalItems = $products['data']['products']['totalItems'];
     
@@ -136,7 +136,7 @@ class VendureHelper
             $result = [];
 
             do {
-                $queryResult = (new \WeAreHausTech\Queries\Collection)->get($lang, $skip, $take, $parentIds);
+                $queryResult = (new \WeAreHausTech\WpProductSync\Queries\Collection)->get($lang, $skip, $take, $parentIds);
                 $items = $queryResult['data']['collections']['items'];
 
                 if (!empty($items)) {
@@ -173,7 +173,7 @@ class VendureHelper
 
     public function getVendureCollectionData($lang, $data = [], $skip = 0, $take = 100)
     {
-        $collections = (new \WeAreHausTech\Queries\Collection)->get($lang, $skip, $take);
+        $collections = (new \WeAreHausTech\WpProductSync\Queries\Collection)->get($lang, $skip, $take);
 
         if (!isset($collections['data']['collections']['items'])) {
             return [];
@@ -220,7 +220,7 @@ class VendureHelper
 
     public function getFacetsFromVendure($lang)
     {
-        $facets = (new \WeAreHausTech\Queries\Facet)->get($lang);
+        $facets = (new \WeAreHausTech\WpProductSync\Queries\Facet)->get($lang);
 
         if (!isset($facets['data']['facets']['items'])) {
             return [];

@@ -1,5 +1,5 @@
 <?php
-namespace WeAreHausTech\Queries;
+namespace WeAreHausTech\WpProductSync\Queries;
 
 class Facet extends BaseQuery
 {

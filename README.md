@@ -25,14 +25,14 @@ Follow these steps to install and set up WP Product Sync in your project.
 ### Step 1: Install the Package
 
 Run the following command in your project directory to install the package via Composer:
-`composer require wearehaustech/wp-product-sync`
+`composer require WeAreHausTech/wp-product-sync`
 
 ### Step 2: Initialize the Sync
 
 Add follow code to ecom-elementor-widgets.php
 
 ```
-\WeAreHausTech\BaseSyncProducts::init();
+\HausTech\BaseSyncProducts::init();
 ```
 
 ### Step 3: Add Configuration File for syncing customized data

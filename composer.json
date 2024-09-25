@@ -3,7 +3,7 @@
   "description": "Wordpress products sync",
   "autoload": {
     "psr-4": {
-      "WeAreHausTech\\": "src/"
+      "WeAreHausTech\\WpProductSync\\": "src/"
     }
   },
   "authors": [

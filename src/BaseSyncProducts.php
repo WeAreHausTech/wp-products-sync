@@ -1,16 +1,15 @@
 <?php
 
-namespace WeAreHausTech;
-
+namespace WeAreHausTech\WpProductSync;
 class BaseSyncProducts
 {
     public static function init()
     {
         add_action('init', function () {
             if (defined('WP_CLI') && WP_CLI) {
-                require_once 'SyncData/Commands/SyncProductData.php';
-                require_once 'SyncData/Commands/DeleteAllPosts.php';
-                require_once 'SyncData/Commands/RemoveLock.php';
+                \WP_CLI::add_command('sync-products', \WeAreHausTech\WpProductSync\Commands\SyncProductData::class);
+                \WP_CLI::add_command('sync-products', \WeAreHausTech\WpProductSync\Commands\DeleteAllPosts::class);
+                \WP_CLI::add_command('sync-products', \WeAreHausTech\WpProductSync\Commands\RemoveLock::class);
             }
         });
     }
