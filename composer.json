@@ -1,0 +1,17 @@
+{
+  "name": "wearehaustech/wp-products-sync",
+  "description": "Wordpress products sync",
+  "autoload": {
+    "psr-4": {
+      "WeAreHausTech\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "Haus Tech",
+      "email": "info@haus.se",
+      "homepage": "https://haus.se"
+    }
+  ],
+  "require": {}
+}
