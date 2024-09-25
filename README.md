@@ -1,10 +1,10 @@
 # WP Product Sync
 
-WP Product Sync allows for easy synchronization of product data between your WordPress site and external data sources.
+WP Product Sync allows for easy synchronization of product data between your WordPress site and Vendure
 
 ## Commands
 
-Sync products and taxonomies
+Sync products and taxonomies:
 `wp sync-products sync`
 
 Delete all products:
