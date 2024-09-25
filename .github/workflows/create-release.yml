@@ -23,7 +23,7 @@ jobs:
         run: composer install --no-dev --no-interaction --no-progress --optimize-autoloader
 
       - name: Copy files to tmp folder
-        run: mkdir -p ./tmp && cp -r ./dist ./src ./composer.json ./composer.lock ./README.md ./tmp
+        run: mkdir -p ./tmp && cp -r ./src ./composer.json ./composer.lock ./README.md ./tmp
 
       - name: Create ZIP file
         run: zip -r ./release.zip ./tmp
