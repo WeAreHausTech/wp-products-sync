@@ -61,6 +61,24 @@ class ConfigHelper
         return false;
     }
 
+    public function getFacetTypesInWP(){
+        $taxonomies = $this->getTaxonomiesFromConfig();
+
+        if (!isset($taxonomies) || empty( (array) $taxonomies)) {
+           return false;
+        }
+
+        $wpFacetTypes = [];
+
+        foreach ($taxonomies as $taxonomy) {
+            if (isset($taxonomy['type']) && $taxonomy['type'] === 'facet') {
+                $wpFacetTypes[] = $taxonomy['wp'];
+            }
+        }
+
+        return $wpFacetTypes;
+    }
+
     public function isCollection($postType) {
 
         $taxonomies = $this->getTaxonomiesFromConfig();
