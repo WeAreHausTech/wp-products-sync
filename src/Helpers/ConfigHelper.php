@@ -134,6 +134,7 @@ class ConfigHelper
 
         return $collections;
     }
+    
     public function getFacetTaxonomyPostTypes()
     {
         $taxonomies = $this->getTaxonomiesFromConfig();
@@ -155,7 +156,6 @@ class ConfigHelper
 
     public function getSettings()
     {
-
         $config = require(HAUS_ECOM_PLUGIN_PATH . '/config.php');
 
         if (isset($config['settings'])) {
@@ -165,3 +165,4 @@ class ConfigHelper
         return [];
     }
 }
+
