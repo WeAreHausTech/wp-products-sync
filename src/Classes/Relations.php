@@ -14,7 +14,7 @@ class Relations
     public $collectionTaxonomy = '';
     public $syncCollections = false;
     public $syncFacets = false;
-    public $updated = [];
+    public $updatedOrCreatedProductIds = [];
     public $facetTypes = [];
 
     public function __construct(Products $products)
@@ -26,7 +26,7 @@ class Relations
         $this->collectionTaxonomy = $configHelper->getCollectionTaxonomyType();
         $this->syncFacets = $configHelper->hasFacets();
         $this->syncCollections = $configHelper->hasCollection();
-        $this->updated = $products->updatedOrCreatedProductIds;
+        $this->updatedOrCreatedProductIds = $products->updatedOrCreatedProductIds;
         $this->facetTypes = $configHelper->getFacetTypesInWP();
     }
 
@@ -40,7 +40,7 @@ class Relations
             return;
         }
         foreach ($vendureProducts as $vendureId => $vendureProduct) {
-            if (!in_array($vendureId, $this->updated)) {
+            if (!in_array($vendureId, $this->updatedOrCreatedProductIds)) {
                 continue;
             }
 
