@@ -5,6 +5,7 @@ namespace WeAreHausTech\WpProductSync\Classes;
 use WeAreHausTech\WpProductSync\Helpers\WpHelper;
 use WeAreHausTech\WpProductSync\Helpers\WpmlHelper;
 use WeAreHausTech\WpProductSync\Helpers\ConfigHelper;
+use WeAreHausTech\WpProductSync\Classes\Products;
 
 class Relations
 {
@@ -13,8 +14,10 @@ class Relations
     public $collectionTaxonomy = '';
     public $syncCollections = false;
     public $syncFacets = false;
+    public $updated = [];
+    public $facetTypes = [];
 
-    public function __construct()
+    public function __construct(Products $products)
     {
         $wpmlHelper = new WpmlHelper();
         $configHelper = new ConfigHelper();
@@ -23,19 +26,24 @@ class Relations
         $this->collectionTaxonomy = $configHelper->getCollectionTaxonomyType();
         $this->syncFacets = $configHelper->hasFacets();
         $this->syncCollections = $configHelper->hasCollection();
+        $this->updated = $products->updatedOrCreatedProductIds;
+        $this->facetTypes = $configHelper->getFacetTypesInWP();
     }
-    
+
     public function syncRelationships($vendureProducts)
     {
         $products = $this->getProductIds();
         $this->syncFacets && $facets = $this->getFacetids();
         $this->syncCollections && $collections = $this->getCollectionids();
 
-        if ( !$this->syncFacets && !$this->syncCollections) {
+        if (!$this->syncFacets && !$this->syncCollections) {
             return;
         }
-
         foreach ($vendureProducts as $vendureId => $vendureProduct) {
+            if (!in_array($vendureId, $this->updated)) {
+                continue;
+            }
+
             $wpProduct = $products[$vendureId];
             $this->syncFacets && $this->assignFacetValues($wpProduct, $vendureProduct['facetValueIds'], $facets);
             $this->syncCollections && $this->assignCollectionValues($wpProduct, $vendureProduct['collectionIds'], $collections);
@@ -84,7 +92,7 @@ class Relations
                     'taxonomy' => isset($data['taxonomy']) ? $data['taxonomy'] : null,
                     'ids' => []
                 ];
-            } 
+            }
 
             if ($this->useWpml) {
                 $returnData[$id]['ids'][$data['lang']] = $data['ID'];
@@ -98,6 +106,7 @@ class Relations
 
     public function assignCollectionValues($wpProduct, $collectionIds, $collections)
     {
+        $this->removeAllTermsOfType($wpProduct, $this->collectionTaxonomy);
         $collectionsData = array();
         foreach ($collectionIds as $collectionValueId) {
             if (!isset($collections[$collectionValueId])) {
@@ -113,7 +122,7 @@ class Relations
             }
         }
 
-        if (!isset($this->collectionTaxonomy)){
+        if (!isset($this->collectionTaxonomy)) {
             return;
         }
 
@@ -122,8 +131,28 @@ class Relations
         }
     }
 
+    public function removeAllTermsOfType($wpProduct, $taxonomyType)
+    {
+        foreach ($wpProduct['ids'] as $lang => $wpProductId) {
+            $terms = wp_get_object_terms($wpProductId, $taxonomyType);
+
+
+            if (!empty($terms) && !is_wp_error($terms)) {
+                $termIds = wp_list_pluck($terms, 'term_id');
+
+                if (!empty($termIds)) {
+                    wp_remove_object_terms($wpProductId, $termIds, $taxonomyType);
+                }
+            }
+        }
+    }
+
     public function assignFacetValues($wpProduct, $facetValuesIds, $facets)
     {
+        foreach ($this->facetTypes as $facetType) {
+            $this->removeAllTermsOfType($wpProduct, $facetType);
+        }
+
         foreach ($facetValuesIds as $facetValueId) {
             if (!isset($facets[$facetValueId])) {
                 continue;

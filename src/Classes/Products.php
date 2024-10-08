@@ -7,11 +7,12 @@ use WeAreHausTech\WpProductSync\Helpers\WpHelper;
 
 class Products
 {
-    public $created = 0;     public $updated = 0;
+    public $created = 0;
+    public $updated = 0;
     public $deleted = 0;
     public $defaultLang = '';
     public $useWpml = false;
-
+    public $updatedOrCreatedProductIds = [];
 
     public function __construct()
     {
@@ -103,8 +104,10 @@ class Products
     public function createProduct($product)
     {
         $customFields = isset($product['customFields']) ? $product['customFields'] : null;
-
+        
         $orignal = $this->insertPost($product['name'], $product['description'], $product['slug'], $product['id'], $product['updatedAt'], $customFields);
+
+        $this->updatedOrCreatedProductIds[] = $product['id'];
 
         if (!$this->useWpml) {
             $this->created++;
@@ -192,6 +195,7 @@ class Products
         ]);
 
         WpHelper::log(['Updating product', $postTitle, $postName, $vendureId]);
+        $this->updatedOrCreatedProductIds[] = $vendureId;
         CacheHelper::clear($postId);
 
         $this->updated++;

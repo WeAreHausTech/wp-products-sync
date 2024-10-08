@@ -31,7 +31,8 @@ class ConfigHelper
         return [];
     }
 
-    public function hasCollection(){
+    public function hasCollection()
+    {
         $taxonomies = $this->getTaxonomiesFromConfig();
 
         if (!isset($taxonomies) || empty( (array) $taxonomies)) {
@@ -46,7 +47,8 @@ class ConfigHelper
         return false;
     }
 
-    public function hasFacets(){
+    public function hasFacets()
+    {
         $taxonomies = $this->getTaxonomiesFromConfig();
 
         if (!isset($taxonomies) || empty( (array) $taxonomies)) {
@@ -61,7 +63,27 @@ class ConfigHelper
         return false;
     }
 
-    public function isCollection($postType) {
+    public function getFacetTypesInWP()
+    {
+        $taxonomies = $this->getTaxonomiesFromConfig();
+
+        if (!isset($taxonomies) || empty( (array) $taxonomies)) {
+           return false;
+        }
+
+        $wpFacetTypes = [];
+
+        foreach ($taxonomies as $taxonomy) {
+            if (isset($taxonomy['type']) && $taxonomy['type'] === 'facet') {
+                $wpFacetTypes[] = $taxonomy['wp'];
+            }
+        }
+
+        return $wpFacetTypes;
+    }
+
+    public function isCollection($postType)
+    {
 
         $taxonomies = $this->getTaxonomiesFromConfig();
 
@@ -77,7 +99,8 @@ class ConfigHelper
         return false;
     }
 
-    public function getCollectionTaxonomyType(){
+    public function getCollectionTaxonomyType()
+    {
         $taxonomies = $this->getTaxonomiesFromConfig();
 
         if (!isset($taxonomies) || empty( (array) $taxonomies)) {
@@ -92,7 +115,8 @@ class ConfigHelper
         return '';
     }
 
-    public function getCollectionTaxonomyPostTypes() {
+    public function getCollectionTaxonomyPostTypes()
+    {
 
         $taxonomies = $this->getTaxonomiesFromConfig();
 
@@ -110,7 +134,9 @@ class ConfigHelper
 
         return $collections;
     }
-    public function getFacetTaxonomyPostTypes() {
+    
+    public function getFacetTaxonomyPostTypes()
+    {
         $taxonomies = $this->getTaxonomiesFromConfig();
     
         if (!isset($taxonomies) || empty($taxonomies)) {
