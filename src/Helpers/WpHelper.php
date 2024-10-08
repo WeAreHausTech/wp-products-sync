@@ -5,6 +5,7 @@ namespace WeAreHausTech\WpProductSync\Helpers;
 use WeAreHausTech\WpProductSync\Helpers\WpmlHelper;
 use WeAreHausTech\WpProductSync\Classes\Products;
 use WeAreHausTech\WpProductSync\Classes\Taxonomies;
+use WeAreHausTech\WpProductSync\Helpers\ConfigHelper;
 
 class WpHelper
 {
@@ -42,6 +43,19 @@ class WpHelper
             }
         }
         return $products;
+    }
+
+    public function flashRewriteRulesIfAnythingIsUpdated($productsInstance, $taxonomiesInstance)
+    {
+        $configHelper = new ConfigHelper();
+        $settings = $configHelper->getSettings();
+        
+        $productsUpdated = $productsInstance->updated > 0 || $productsInstance->created > 0;
+        $taxonomiesUpdated = $taxonomiesInstance->updatedTaxonimies > 0 || $taxonomiesInstance->createdTaxonomies > 0;
+
+        if (isset($settings['flushLinks']) && $settings['flushLinks'] && ($productsUpdated || $taxonomiesUpdated)) {
+            flush_rewrite_rules(false);
+        }
     }
 
     public function getProductsToExclude()

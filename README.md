@@ -73,6 +73,20 @@ return [
            }
           "
     ],
-  ]
+  ], 
+   'settings' => [
+        'flushLinks' => true
+    ]
 ];
 ```
+
+#### Settings
+
+- **flushLinks**
+  - **Description**: Activates flush_rewrite_rules when product/taxonomy is updated/created
+  - **Possible values**: true/false
+  - **Required/Optional**: Optional (use if custom url structure)
+  - **Example**:
+    ```bash
+    'flushLinks' => true
+    ```

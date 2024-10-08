@@ -27,15 +27,16 @@ class ConfigHelper
         if (isset($config['productSync']) && isset($config['productSync']['taxonomies'])) {
             return $config['productSync']['taxonomies'];
         }
-        
+
         return [];
     }
 
-    public function hasCollection(){
+    public function hasCollection()
+    {
         $taxonomies = $this->getTaxonomiesFromConfig();
 
-        if (!isset($taxonomies) || empty( (array) $taxonomies)) {
-           return false;
+        if (!isset($taxonomies) || empty((array) $taxonomies)) {
+            return false;
         }
 
         foreach ($taxonomies as $taxonomy) {
@@ -46,11 +47,12 @@ class ConfigHelper
         return false;
     }
 
-    public function hasFacets(){
+    public function hasFacets()
+    {
         $taxonomies = $this->getTaxonomiesFromConfig();
 
-        if (!isset($taxonomies) || empty( (array) $taxonomies)) {
-           return false;
+        if (!isset($taxonomies) || empty((array) $taxonomies)) {
+            return false;
         }
 
         foreach ($taxonomies as $taxonomy) {
@@ -61,11 +63,12 @@ class ConfigHelper
         return false;
     }
 
-    public function getFacetTypesInWP(){
+    public function getFacetTypesInWP()
+    {
         $taxonomies = $this->getTaxonomiesFromConfig();
 
-        if (!isset($taxonomies) || empty( (array) $taxonomies)) {
-           return false;
+        if (!isset($taxonomies) || empty((array) $taxonomies)) {
+            return false;
         }
 
         $wpFacetTypes = [];
@@ -79,12 +82,13 @@ class ConfigHelper
         return $wpFacetTypes;
     }
 
-    public function isCollection($postType) {
+    public function isCollection($postType)
+    {
 
         $taxonomies = $this->getTaxonomiesFromConfig();
 
-        if (!isset($taxonomies) || empty( (array) $taxonomies)) {
-           return false;
+        if (!isset($taxonomies) || empty((array) $taxonomies)) {
+            return false;
         }
 
         foreach ($taxonomies as $taxonomy) {
@@ -95,11 +99,12 @@ class ConfigHelper
         return false;
     }
 
-    public function getCollectionTaxonomyType(){
+    public function getCollectionTaxonomyType()
+    {
         $taxonomies = $this->getTaxonomiesFromConfig();
 
-        if (!isset($taxonomies) || empty( (array) $taxonomies)) {
-           return false;
+        if (!isset($taxonomies) || empty((array) $taxonomies)) {
+            return false;
         }
 
         foreach ($taxonomies as $taxonomy) {
@@ -110,12 +115,13 @@ class ConfigHelper
         return '';
     }
 
-    public function getCollectionTaxonomyPostTypes() {
+    public function getCollectionTaxonomyPostTypes()
+    {
 
         $taxonomies = $this->getTaxonomiesFromConfig();
 
-        if (!isset($taxonomies) || empty( (array) $taxonomies)) {
-           return false;
+        if (!isset($taxonomies) || empty((array) $taxonomies)) {
+            return false;
         }
 
         $collections = [];
@@ -128,21 +134,34 @@ class ConfigHelper
 
         return $collections;
     }
-    public function getFacetTaxonomyPostTypes() {
+    public function getFacetTaxonomyPostTypes()
+    {
         $taxonomies = $this->getTaxonomiesFromConfig();
-    
+
         if (!isset($taxonomies) || empty($taxonomies)) {
-           return false;
+            return false;
         }
-    
+
         $facets = [];
-    
+
         foreach ($taxonomies as $taxonomy) {
             if ($taxonomy['type'] === 'facet') {
                 $facets[] = $taxonomy['wp'];
             }
         }
-        
+
         return $facets;
+    }
+
+    public function getSettings()
+    {
+
+        $config = require(HAUS_ECOM_PLUGIN_PATH . '/config.php');
+
+        if (isset($config['settings'])) {
+            return $config['settings'];
+        }
+
+        return [];
     }
 }
