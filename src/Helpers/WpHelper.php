@@ -49,7 +49,6 @@ class WpHelper
     {
         $settings = ConfigHelper::getSettings();
         
-        
         $productsUpdated = $productsInstance->updated > 0 || $productsInstance->created > 0;
         $taxonomiesUpdated = $taxonomiesInstance->updatedTaxonimies > 0 || $taxonomiesInstance->createdTaxonomies > 0;
 
@@ -128,7 +127,6 @@ class WpHelper
 
     public function getProductsQuery()
     {
-
         global $wpdb;
 
         if ($this->useWpml) {
@@ -302,7 +300,6 @@ class WpHelper
 
     public function getTermsQuery($taxonomy)
     {
-
         global $wpdb;
         $terms = $wpdb->prefix . 'terms';
         $termmeta = $wpdb->prefix . 'termmeta';
@@ -440,7 +437,6 @@ class WpHelper
 
     public function getProductIds()
     {
-
         global $wpdb;
 
         if ($this->useWpml) {
