@@ -154,7 +154,7 @@ class ConfigHelper
         return $facets;
     }
 
-    public function getSettings()
+    static function getSettings()
     {
         $config = require(HAUS_ECOM_PLUGIN_PATH . '/config.php');
 

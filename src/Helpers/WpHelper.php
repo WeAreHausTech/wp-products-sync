@@ -47,13 +47,13 @@ class WpHelper
 
     public function flashRewriteRulesIfAnythingIsUpdated($productsInstance, $taxonomiesInstance)
     {
-        $configHelper = new ConfigHelper();
-        $settings = $configHelper->getSettings();
+        $settings = ConfigHelper::getSettings();
+        
         
         $productsUpdated = $productsInstance->updated > 0 || $productsInstance->created > 0;
         $taxonomiesUpdated = $taxonomiesInstance->updatedTaxonimies > 0 || $taxonomiesInstance->createdTaxonomies > 0;
 
-        if (isset($settings['flushLinks']) && $settings['flushLinks'] && ($productsUpdated || $taxonomiesUpdated)) {
+        if (!empty($settings['flushLinks']) && ($productsUpdated || $taxonomiesUpdated)) {
             flush_rewrite_rules(false);
         }
     }
