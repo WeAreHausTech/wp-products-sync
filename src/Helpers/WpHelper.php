@@ -5,6 +5,7 @@ namespace WeAreHausTech\WpProductSync\Helpers;
 use WeAreHausTech\WpProductSync\Helpers\WpmlHelper;
 use WeAreHausTech\WpProductSync\Classes\Products;
 use WeAreHausTech\WpProductSync\Classes\Taxonomies;
+use WeAreHausTech\WpProductSync\Helpers\ConfigHelper;
 
 class WpHelper
 {
@@ -42,6 +43,18 @@ class WpHelper
             }
         }
         return $products;
+    }
+
+    public function flashRewriteRulesIfAnythingIsUpdated($productsInstance, $taxonomiesInstance)
+    {
+        $settings = ConfigHelper::getSettings();
+        
+        $productsUpdated = $productsInstance->updated > 0 || $productsInstance->created > 0;
+        $taxonomiesUpdated = $taxonomiesInstance->updatedTaxonimies > 0 || $taxonomiesInstance->createdTaxonomies > 0;
+
+        if (!empty($settings['flushLinks']) && ($productsUpdated || $taxonomiesUpdated)) {
+            flush_rewrite_rules(false);
+        }
     }
 
     public function getProductsToExclude()
@@ -114,7 +127,6 @@ class WpHelper
 
     public function getProductsQuery()
     {
-
         global $wpdb;
 
         if ($this->useWpml) {
@@ -288,7 +300,6 @@ class WpHelper
 
     public function getTermsQuery($taxonomy)
     {
-
         global $wpdb;
         $terms = $wpdb->prefix . 'terms';
         $termmeta = $wpdb->prefix . 'termmeta';
@@ -426,7 +437,6 @@ class WpHelper
 
     public function getProductIds()
     {
-
         global $wpdb;
 
         if ($this->useWpml) {
