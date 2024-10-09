@@ -28,6 +28,7 @@ class Collection extends BaseQuery
                     name
                     slug
                     description
+                    position
                     assets {
                         source
                     }           

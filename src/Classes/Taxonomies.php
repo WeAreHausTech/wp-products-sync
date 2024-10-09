@@ -138,7 +138,7 @@ class Taxonomies
 
             if ($lang === $this->defaultLang) {
                 $termImage = $vendureTerm['assets'] ? $vendureTerm['assets'][0]['source'] : null;
-                $this->updateTaxonomy($wpTerm['term_id'] ?? null, $taxonomy, $vendureTerm['name'], $vendureSlug, $vendureTerm['updatedAt'], $vendureTerm['customFields'] ?? null, $vendureTerm['description'] ?? '', $termImage);
+                $this->updateTaxonomy($wpTerm['term_id'] ?? null, $taxonomy, $vendureTerm['name'], $vendureSlug, $vendureTerm['updatedAt'], $vendureTerm['customFields'] ?? null, $vendureTerm['description'] ?? '', $termImage, $vendureTerm['position']);
                 continue;
             }
 
@@ -151,7 +151,7 @@ class Taxonomies
                 $termImage = $vendureTerm['translations'][$lang]['assets'] ? $vendureTerm['translations'][$lang]['assets'][0]['source'] : null;
 
                 $translatedSlug = $this->getSlugForTranslations($name, $data, $lang);
-                $this->updateTaxonomy($translatedTermId, $taxonomy, $translatedName, $translatedSlug, $vendureTerm['updatedAt'], $vendureTerm['translations'][$lang]['customFields'] ?? null, $translatedDescription, $termImage);
+                $this->updateTaxonomy($translatedTermId, $taxonomy, $translatedName, $translatedSlug, $vendureTerm['updatedAt'], $vendureTerm['translations'][$lang]['customFields'] ?? null, $translatedDescription, $termImage, $vendureTerm['position']);
             } else {
                 $configHelper = new ConfigHelper();
                 $isCollection = $configHelper->isCollection($taxonomy);
@@ -184,7 +184,7 @@ class Taxonomies
         return $data;
     }
 
-    public function updateTaxonomy($termID, $taxonomy, $name, $slug, $updatedAt, $customFields = null, $description = '', $termImage = null)
+    public function updateTaxonomy($termID, $taxonomy, $name, $slug, $updatedAt, $customFields = null, $description = '', $termImage = null, $position = null)
     {
         $args = array(
             'name' => $name,
@@ -207,6 +207,12 @@ class Taxonomies
         if ($termImage) {
             update_term_meta($termID, 'vendure_term_image', $termImage);
         }
+        dump($position);
+
+        if ($position !== null) {
+            $termPosition = update_term_meta($term['term_id'], 'vendure_term_position', $position);
+            // dump($termPosition);
+        }
 
         WpHelper::log(['Updating taxonomy', $taxonomy, $name, $slug]);
 
@@ -221,7 +227,7 @@ class Taxonomies
 
         $customFields = $vendureTerm['translations'][$lang]['customFields'] ? $this->getCustomFields($vendureTerm['translations'][$lang]['customFields']) : null;
 
-        $term = $this->insertTerm($vendureTerm['id'], $name, $slug, $taxonomy, $vendureType, $vendureTerm['updatedAt'], $customFields, $description, $termImage);
+        $term = $this->insertTerm($vendureTerm['id'], $name, $slug, $taxonomy, $vendureType, $vendureTerm['updatedAt'], $customFields, $description, $termImage, $vendureTerm['position']);
 
         $translations[$lang] = $term;
         $wmplType = 'tax_' . $taxonomy;
@@ -321,14 +327,15 @@ class Taxonomies
 
     public function addNewTermOriginal($value, $taxonomy, $vendureType)
     {
+        dump($value['position']); 
         $slug = isset($value['slug']) ? $value['slug'] : sanitize_title($value['name']);
 
         $customFields = isset($value['customFields']) ? $this->getCustomFields($value['customFields']) : null;
         $description = $value['description'] ?? '';
         $termImage = $value['assets'] ? $value['assets'][0]['source'] : null;
 
-        $term = $this->insertTerm($value['id'], $value['name'], $slug, $taxonomy, $vendureType, $value['updatedAt'], $customFields, $description, $termImage);
-
+        $term = $this->insertTerm($value['id'], $value['name'], $slug, $taxonomy, $vendureType, $value['updatedAt'], $customFields, $description, $termImage, $value['position']);
+       
         WpHelper::log(['Creating taxonomy', $taxonomy, $value['name'], $slug]);
 
         return $term;
@@ -347,7 +354,7 @@ class Taxonomies
 
             $termImage = $translation['assets'] ? $translation['assets'][0]['source'] : null;
 
-            $term = $this->insertTerm($value['id'], $translation['name'], $slug, $taxonomy, $vendureType, $value['updatedAt'], $customFields, $description, $termImage);
+            $term = $this->insertTerm($value['id'], $translation['name'], $slug, $taxonomy, $vendureType, $value['updatedAt'], $customFields, $description, $termImage, $value['position']);
             $translations[$lang] = $term;
         }
 
@@ -369,7 +376,7 @@ class Taxonomies
         }
     }
 
-    public function insertTerm($vendureId, $name, $slug, $taxonomy, $vendureType, $updatedAt, $customFields = null, $description = '', $termImage = null)
+    public function insertTerm($vendureId, $name, $slug, $taxonomy, $vendureType, $updatedAt, $customFields = null, $description = '', $termImage = null, $position = null)
     {
         $term = wp_insert_term($name, $taxonomy, ['slug' => $slug, 'description' => $description]);
 
@@ -381,6 +388,12 @@ class Taxonomies
 
         add_term_meta($term['term_id'], $vendureType, $vendureId, true);
         add_term_meta($term['term_id'], 'vendure_updated_at', $updatedAt, true);
+        // dump($position);
+
+        if ($position !== null) {
+            $termPosition = add_term_meta($term['term_id'], 'vendure_term_position', $position, true);
+            
+        }
 
         if ($termImage) {
             add_term_meta($term['term_id'], 'vendure_term_image', $termImage, true);
