@@ -210,8 +210,7 @@ class Taxonomies
         dump($position);
 
         if ($position !== null) {
-            $termPosition = update_term_meta($term['term_id'], 'vendure_term_position', $position);
-            // dump($termPosition);
+            update_term_meta($term['term_id'], 'vendure_term_position', $position);
         }
 
         WpHelper::log(['Updating taxonomy', $taxonomy, $name, $slug]);
@@ -327,7 +326,6 @@ class Taxonomies
 
     public function addNewTermOriginal($value, $taxonomy, $vendureType)
     {
-        dump($value['position']); 
         $slug = isset($value['slug']) ? $value['slug'] : sanitize_title($value['name']);
 
         $customFields = isset($value['customFields']) ? $this->getCustomFields($value['customFields']) : null;
@@ -388,11 +386,9 @@ class Taxonomies
 
         add_term_meta($term['term_id'], $vendureType, $vendureId, true);
         add_term_meta($term['term_id'], 'vendure_updated_at', $updatedAt, true);
-        // dump($position);
 
         if ($position !== null) {
-            $termPosition = add_term_meta($term['term_id'], 'vendure_term_position', $position, true);
-            
+            add_term_meta($term['term_id'], 'vendure_term_position', $position, true);
         }
 
         if ($termImage) {
