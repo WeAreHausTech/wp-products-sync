@@ -107,8 +107,9 @@ class Taxonomies
 
         if ($isCollection) {
             foreach ($vendureTerms as $vendureId => $vendureTerm) {
-                $wpTerm = $wpTerms[$vendureId];
-                if ($vendureTerm['updatedAt'] !== $wpTerm['vendure_updated_at']) {
+                $wpTerm = isset($wpTerms[$vendureId]) ? $wpTerms[$vendureId] : null;
+             
+                if (empty($wpTerm) || $vendureTerm['updatedAt'] !== $wpTerm['vendure_updated_at'] ) {
                     $this->syncCollectionParents($vendureId, $vendureTerm['parentId'], $taxonomy, $rootCollection);
                 }
             }
@@ -135,9 +136,9 @@ class Taxonomies
 
         foreach ($update as $lang) {
             $vendureSlug = $this->getVendureTermSlug($vendureTerm);
-            $customFields = isset($vendureTerm['customFields']) ?? null; 
-            $description = isset($vendureTerm['description']) ?? ''; 
-            $position = isset($vendureTerm['position']) ?? null; 
+            $customFields = isset($vendureTerm['customFields']) ? $vendureTerm['customFields'] : null; 
+            $description = isset($vendureTerm['description']) ? $vendureTerm['description'] : ''; 
+            $position = isset($vendureTerm['position']) ? $vendureTerm['position'] : null; 
 
             if ($lang === $this->defaultLang) {
                 $termImage = $vendureTerm['assets'] ? $vendureTerm['assets'][0]['source'] : null;
@@ -227,7 +228,7 @@ class Taxonomies
         $termImage = $vendureTerm['translations'][$lang]['assets'] ? $vendureTerm['translations'][$lang]['assets'][0]['source'] : null;
 
         $customFields = $vendureTerm['translations'][$lang]['customFields'] ? $this->getCustomFields($vendureTerm['translations'][$lang]['customFields']) : null;
-        $position = isset($vendureTerm['position']) ?? null; 
+        $position = isset($vendureTerm['position']) ? $vendureTerm['position'] : null; 
 
         $term = $this->insertTerm($vendureTerm['id'], $name, $slug, $taxonomy, $vendureType, $vendureTerm['updatedAt'], $customFields, $description, $termImage, $position);
 
@@ -333,8 +334,8 @@ class Taxonomies
 
         $customFields = isset($value['customFields']) ? $this->getCustomFields($value['customFields']) : null;
         $description = $value['description'] ?? '';
-        $termImage = isset($value['assets']) ? $value['assets'][0]['source'] : null;
-        $position = isset($value['position']) ?? null; 
+        $termImage = isset($value['assets'][0]['source']) ? $value['assets'][0]['source'] : null;
+        $position = isset($value['position']) ? $value['position'] : null; 
 
         $term = $this->insertTerm($value['id'], $value['name'], $slug, $taxonomy, $vendureType, $value['updatedAt'], $customFields, $description, $termImage, $position);
        
@@ -354,8 +355,8 @@ class Taxonomies
             $customFields = $translation['customFields'] ? $this->getCustomFields($translation['customFields']) : null;
             $description = $translation['description'] ?? '';
 
-            $termImage = isset($translation['assets']) ? $translation['assets'][0]['source'] : null;
-            $position = isset($value['position']) ?? null;
+            $termImage = isset($translation['assets'][0]['source']) ? $translation['assets'][0]['source'] : null;
+            $position = isset($value['position']) ? $value['position'] : null;
             $term = $this->insertTerm($value['id'], $translation['name'], $slug, $taxonomy, $vendureType, $value['updatedAt'], $customFields, $description, $termImage, $position);
             $translations[$lang] = $term;
             
