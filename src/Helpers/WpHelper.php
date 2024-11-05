@@ -48,7 +48,7 @@ class WpHelper
     public function flashRewriteRulesIfAnythingIsUpdated($productsInstance, $taxonomiesInstance)
     {
         $settings = ConfigHelper::getSettings();
-        
+
         $productsUpdated = $productsInstance->updated > 0 || $productsInstance->created > 0;
         $taxonomiesUpdated = $taxonomiesInstance->updatedTaxonimies > 0 || $taxonomiesInstance->createdTaxonomies > 0;
 
@@ -62,7 +62,7 @@ class WpHelper
         global $wpdb;
 
         $shouldBeExcluded = "1";
-        $queryExclude = 
+        $queryExclude =
             "SELECT p.ID as id
              FROM {$wpdb->prefix}posts p
              LEFT JOIN {$wpdb->prefix}postmeta pm2
@@ -88,11 +88,83 @@ class WpHelper
 
         $excludedIds = [];
         foreach ($exclude as $product) {
+            if (!isset($product['id'])) {
+                continue;
+            }
             $excludedIds[] = intval($product['id']);
         }
 
         return $excludedIds;
     }
+
+    public function deleteAllDuplicateProducts()
+    {
+        global $wpdb;
+
+        if ($this->useWpml) {
+            $query = "
+                SELECT p1.ID
+                FROM {$wpdb->prefix}posts p1
+                LEFT JOIN {$wpdb->prefix}postmeta pm1
+                    ON p1.ID = pm1.post_id
+                    AND pm1.meta_key = 'vendure_id'
+                LEFT JOIN {$wpdb->prefix}icl_translations t1
+                    ON p1.ID = t1.element_id
+                    AND t1.element_type = 'post_produkter'
+                WHERE p1.post_type = 'produkter'
+                AND pm1.meta_value IS NOT NULL
+                AND pm1.meta_value != ''
+                AND EXISTS (
+                    SELECT 1
+                    FROM {$wpdb->prefix}posts p2
+                    LEFT JOIN {$wpdb->prefix}postmeta pm2
+                        ON p2.ID = pm2.post_id
+                        AND pm2.meta_key = 'vendure_id'
+                    LEFT JOIN {$wpdb->prefix}icl_translations t2
+                        ON p2.ID = t2.element_id
+                        AND t2.element_type = 'post_produkter'
+                    WHERE pm1.meta_value = pm2.meta_value
+                    AND t1.language_code = t2.language_code
+                    AND p2.ID < p1.ID
+                    AND p2.post_type = 'produkter'
+                )";
+        } else {
+            $query = "
+                SELECT p1.ID
+                    FROM {$wpdb->prefix}posts p1
+                    INNER JOIN {$wpdb->prefix}postmeta pm1 ON p1.ID = pm1.post_id
+                    AND pm1.meta_key = 'vendure_id'
+                    WHERE p1.post_type = 'produkter'
+                    AND pm1.meta_value IS NOT NULL
+                    AND pm1.meta_value != ''
+                    AND EXISTS (
+                        SELECT 1
+                        FROM {$wpdb->prefix}postmeta pm2
+                        INNER JOIN {$wpdb->prefix}posts p2 ON p2.ID = pm2.post_id
+                        WHERE pm1.meta_value = pm2.meta_value
+                        AND p2.ID < p1.ID
+                        AND p2.post_type = 'produkter'
+                    )";
+        }
+
+        $duplicatesToDelete = $wpdb->get_results($query, ARRAY_A);
+
+        if (empty($duplicatesToDelete)) {
+            return;
+        }
+
+        $productsToExclude = $this->getProductsToExclude();
+
+        $filteredProductsToDelete = array_filter($duplicatesToDelete, function ($duplicate) use ($productsToExclude) {
+            return !in_array(intval($duplicate['ID']), $productsToExclude);
+        });
+
+        foreach ($filteredProductsToDelete as $duplicate) {
+            $productInstance = new Products();
+            $productInstance->deleteProduct($duplicate['ID']);
+        }
+    }
+
 
     public function deleteAllProductsWithoutVendureId()
     {
@@ -106,7 +178,7 @@ class WpHelper
                 AND pm.meta_key = 'vendure_id'
              WHERE p.post_type = 'produkter'
             AND (pm.meta_value IS NULL OR pm.meta_value = '')";
-        
+
 
         $productsToDelete = $wpdb->get_results($query, ARRAY_A);
 
@@ -130,6 +202,8 @@ class WpHelper
         global $wpdb;
 
         if ($this->useWpml) {
+            $lang = $this->defaultLang;
+
             return
                 "SELECT p.ID as id, p.post_title, p.post_content, p.post_name, pm.meta_value as vendure_id, pm3.meta_value as vendure_updated_at, pm2.meta_value as exclude_from_sync, t.language_code as lang
                  FROM {$wpdb->prefix}posts p 
@@ -146,7 +220,7 @@ class WpHelper
                     ON p.ID = t.element_id
                     AND t.element_type = 'post_produkter'
                     AND t.language_code IS NOT NULL
-                    WHERE t.language_code = 'sv'
+                    WHERE t.language_code = '{$lang}'
                     AND post_type ='produkter'";
         } else {
             return
@@ -168,6 +242,7 @@ class WpHelper
     public function getProductsDefaultLang()
     {
         $this->deleteAllProductsWithoutVendureId();
+        $this->deleteAllDuplicateProducts();
         global $wpdb;
 
         $query = $this->getProductsQuery();
@@ -451,7 +526,7 @@ class WpHelper
             AND t.element_type = 'post_produkter'
             WHERE post_type ='produkter'";
         } else {
-            $query = 
+            $query =
                 "SELECT p.ID, pm.meta_value as vendure_id
                 FROM {$wpdb->prefix}posts p 
                 LEFT JOIN {$wpdb->prefix}postmeta pm
