@@ -131,20 +131,20 @@ class WpHelper
         } else {
             $query = "
                 SELECT p1.ID
-                    FROM {$wpdb->prefix}posts p1
-                    INNER JOIN {$wpdb->prefix}postmeta pm1 ON p1.ID = pm1.post_id
-                    AND pm1.meta_key = 'vendure_id'
-                    WHERE p1.post_type = 'produkter'
-                    AND pm1.meta_value IS NOT NULL
-                    AND pm1.meta_value != ''
-                    AND EXISTS (
-                        SELECT 1
-                        FROM {$wpdb->prefix}postmeta pm2
-                        INNER JOIN {$wpdb->prefix}posts p2 ON p2.ID = pm2.post_id
-                        WHERE pm1.meta_value = pm2.meta_value
-                        AND p2.ID < p1.ID
-                        AND p2.post_type = 'produkter'
-                    )";
+                FROM {$wpdb->prefix}posts p1
+                INNER JOIN {$wpdb->prefix}postmeta pm1 ON p1.ID = pm1.post_id
+                AND pm1.meta_key = 'vendure_id'
+                WHERE p1.post_type = 'produkter'
+                AND pm1.meta_value IS NOT NULL
+                AND pm1.meta_value != ''
+                AND EXISTS (
+                    SELECT 1
+                    FROM {$wpdb->prefix}postmeta pm2
+                    INNER JOIN {$wpdb->prefix}posts p2 ON p2.ID = pm2.post_id
+                    WHERE pm1.meta_value = pm2.meta_value
+                    AND p2.ID < p1.ID
+                    AND p2.post_type = 'produkter'
+                )";
         }
 
         $duplicatesToDelete = $wpdb->get_results($query, ARRAY_A);
