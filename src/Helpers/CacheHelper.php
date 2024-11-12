@@ -6,7 +6,6 @@ class CacheHelper
 {
     public static function clear($postId)
     {
-
         if (!isset($postId)) {
             return;
         }
