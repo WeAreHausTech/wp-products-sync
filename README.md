@@ -4,8 +4,9 @@ WP Product Sync allows for easy synchronization of product data between your Wor
 
 ## Publish package
 
-`git tag <version number>`
+`git tag <version number>` // including v and workflow will trigger a new release
 `git push --tags`
+
 
 ## Commands
 
