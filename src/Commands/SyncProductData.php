@@ -21,6 +21,7 @@ class SyncProductData extends \WP_CLI_Command
     {
         LockHelper::abortIfAlreadyRunning();
         LockHelper::setLock();
+        WpHelper::log('Sync started');
 
         try {
             $taxonomiesInstance = new Taxonomies();
@@ -63,12 +64,15 @@ class SyncProductData extends \WP_CLI_Command
                 $taxonomiesInstance->updatedTaxonimies,
                 $taxonomiesInstance->deletedTaxonomies
             );
-
+            WpHelper::log( $productsSummary );
+            WpHelper::log( $taxonomiesSummary );
             \WP_CLI::success("\n" . $productsSummary . "\n" . $taxonomiesSummary);
         } catch (Exception $e) {
+            WpHelper::log('An error occurred when syncing products', );
             \WP_CLI::error("An error occurred: " . $e->getMessage());
         } finally {
             // Ensure the lock is cleared
+            WpHelper::log('Sync completed', );
             LockHelper::removeLock();
         }
 

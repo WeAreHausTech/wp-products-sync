@@ -6,6 +6,7 @@ use WeAreHausTech\WpProductSync\Helpers\WpmlHelper;
 use WeAreHausTech\WpProductSync\Classes\Products;
 use WeAreHausTech\WpProductSync\Classes\Taxonomies;
 use WeAreHausTech\WpProductSync\Helpers\ConfigHelper;
+use  WeAreHausTech\WpProductSync\Helpers\LogHelper;
 
 class WpHelper
 {
@@ -23,7 +24,16 @@ class WpHelper
 
     public static function log($out)
     {
-        echo implode(', ', $out) . PHP_EOL;
+        if (!is_array($out)) {
+            $out = array($out);
+        }
+
+        $sanitized_out = array_map('sanitize_text_field', $out);
+        $message = implode(', ', $sanitized_out) . PHP_EOL;
+        echo $message;
+
+        $LogHelper = new LogHelper();
+        $LogHelper->save_to_log_file($message);
     }
 
     public function getAllProductsFromWp()
