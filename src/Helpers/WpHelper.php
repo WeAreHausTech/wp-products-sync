@@ -15,8 +15,6 @@ class WpHelper
 
     public $useWpml = false;
 
-    public static $logFolder = 'vendure-sync';
-
     public function __construct()
     {
         $wpmlHelper = new WpmlHelper();
