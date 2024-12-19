@@ -64,6 +64,8 @@ class SyncProductData extends \WP_CLI_Command
                 $taxonomiesInstance->updatedTaxonimies,
                 $taxonomiesInstance->deletedTaxonomies
             );
+            WpHelper::log( $productsSummary );
+            WpHelper::log( $taxonomiesSummary );
             \WP_CLI::success("\n" . $productsSummary . "\n" . $taxonomiesSummary);
         } catch (Exception $e) {
             WpHelper::log('An error occurred when syncing products', );
