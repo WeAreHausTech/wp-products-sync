@@ -471,5 +471,7 @@ class Taxonomies
         foreach ($parentData as $id) {
             wp_update_term((int) $id['id'], $taxonomy, ['parent' => (int) $id['parentId']]);
         }
+
+        delete_option($taxonomy . '_children'); 
     }
 }
