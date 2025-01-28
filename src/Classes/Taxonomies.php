@@ -47,7 +47,7 @@ class Taxonomies
             }
 
             if ($taxonomyType === 'collection') {
-                $venudreDefaultRootCollection =  "1";
+                $venudreDefaultRootCollection = "1";
                 $rootCollection = $taxonomyInfo['rootCollectionId'] ?? $venudreDefaultRootCollection;
                 $vendureValues = $vendureHelper->getCollectionsFromVendure($rootCollection);
                 $wpTerms = $wpHelper->getAllCollectionsFromWp($taxonomyInfo['wp']);
@@ -90,7 +90,7 @@ class Taxonomies
         //Exists in Vendure, not in WP
         $create = array_diff_key($vendureTerms, $wpTerms);
 
-        array_walk($create, function ($term) use ($taxonomy) {
+        array_walk($create, callback: function ($term) use ($taxonomy) {
             $this->addNewTerm($term, $taxonomy);
         });
 
@@ -108,8 +108,8 @@ class Taxonomies
         if ($isCollection) {
             foreach ($vendureTerms as $vendureId => $vendureTerm) {
                 $wpTerm = isset($wpTerms[$vendureId]) ? $wpTerms[$vendureId] : null;
-             
-                if (empty($wpTerm) || $vendureTerm['updatedAt'] !== $wpTerm['vendure_updated_at'] ) {
+
+                if (empty($wpTerm) || $vendureTerm['updatedAt'] !== $wpTerm['vendure_updated_at']) {
                     $this->syncCollectionParents($vendureId, $vendureTerm['parentId'], $taxonomy, $rootCollection);
                 }
             }
@@ -136,9 +136,9 @@ class Taxonomies
 
         foreach ($update as $lang) {
             $vendureSlug = $this->getVendureTermSlug($vendureTerm);
-            $customFields = isset($vendureTerm['customFields']) ? $vendureTerm['customFields'] : null; 
-            $description = isset($vendureTerm['description']) ? $vendureTerm['description'] : ''; 
-            $position = isset($vendureTerm['position']) ? $vendureTerm['position'] : null; 
+            $customFields = isset($vendureTerm['customFields']) ? $vendureTerm['customFields'] : null;
+            $description = isset($vendureTerm['description']) ? $vendureTerm['description'] : '';
+            $position = isset($vendureTerm['position']) ? $vendureTerm['position'] : null;
 
             if ($lang === $this->defaultLang) {
                 $termImage = $vendureTerm['assets'] ? $vendureTerm['assets'][0]['source'] : null;
@@ -228,7 +228,7 @@ class Taxonomies
         $termImage = $vendureTerm['translations'][$lang]['assets'] ? $vendureTerm['translations'][$lang]['assets'][0]['source'] : null;
 
         $customFields = $vendureTerm['translations'][$lang]['customFields'] ? $this->getCustomFields($vendureTerm['translations'][$lang]['customFields']) : null;
-        $position = isset($vendureTerm['position']) ? $vendureTerm['position'] : null; 
+        $position = isset($vendureTerm['position']) ? $vendureTerm['position'] : null;
 
         $term = $this->insertTerm($vendureTerm['id'], $name, $slug, $taxonomy, $vendureType, $vendureTerm['updatedAt'], $customFields, $description, $termImage, $position);
 
@@ -269,29 +269,16 @@ class Taxonomies
 
     public function deleteTerm($id, $taxonomy)
     {
-        global $wpdb;
+        $softDelete = ConfigHelper::getSettingByKey('softDelete');
+        $wpHelper = new WpHelper();
+        if ($softDelete) {
+            $wpHelper->setSoftDeletedStatus($id, true, $taxonomy);
+            $this->deletedTaxonomies++;
+            return;
+        }
 
-        $wpdb->query(
-            $wpdb->prepare(
-                "DELETE FROM $wpdb->termmeta WHERE term_id = %d",
-                $id
-            )
-        );
-
-        $wpdb->delete(
-            $wpdb->term_taxonomy,
-            array('term_id' => $id),
-            array('%d')
-        );
-
-        $wpdb->delete(
-            $wpdb->terms,
-            array('term_id' => $id),
-            array('%d')
-        );
-
+        $wpHelper->hardDeleteTerm($id, $taxonomy);
         WpHelper::log(['Deleting taxonomy', $taxonomy, $id]);
-
         $this->deletedTaxonomies++;
     }
 
@@ -335,10 +322,10 @@ class Taxonomies
         $customFields = isset($value['customFields']) ? $this->getCustomFields($value['customFields']) : null;
         $description = $value['description'] ?? '';
         $termImage = isset($value['assets'][0]['source']) ? $value['assets'][0]['source'] : null;
-        $position = isset($value['position']) ? $value['position'] : null; 
+        $position = isset($value['position']) ? $value['position'] : null;
 
         $term = $this->insertTerm($value['id'], $value['name'], $slug, $taxonomy, $vendureType, $value['updatedAt'], $customFields, $description, $termImage, $position);
-       
+
         WpHelper::log(['Creating taxonomy', $taxonomy, $value['name'], $slug]);
 
         return $term;
@@ -359,7 +346,7 @@ class Taxonomies
             $position = isset($value['position']) ? $value['position'] : null;
             $term = $this->insertTerm($value['id'], $translation['name'], $slug, $taxonomy, $vendureType, $value['updatedAt'], $customFields, $description, $termImage, $position);
             $translations[$lang] = $term;
-            
+
         }
 
         WpHelper::log(['Creating taxonomy translation', $lang, $taxonomy, $value['name'], $slug]);
@@ -472,6 +459,6 @@ class Taxonomies
             wp_update_term((int) $id['id'], $taxonomy, ['parent' => (int) $id['parentId']]);
         }
 
-        delete_option($taxonomy . '_children'); 
+        delete_option($taxonomy . '_children');
     }
 }

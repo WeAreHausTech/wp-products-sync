@@ -134,7 +134,7 @@ class ConfigHelper
 
         return $collections;
     }
-    
+
     public function getFacetTaxonomyPostTypes()
     {
         $taxonomies = $this->getTaxonomiesFromConfig();
@@ -163,6 +163,18 @@ class ConfigHelper
         }
 
         return [];
+    }
+
+
+    static function getSettingByKey($key)
+    {
+        $settings = self::getSettings();
+
+        if (isset($settings[$key])) {
+            return $settings[$key];
+        }
+
+        return false;
     }
 }
 

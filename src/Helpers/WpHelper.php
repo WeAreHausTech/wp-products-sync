@@ -6,7 +6,7 @@ use WeAreHausTech\WpProductSync\Helpers\WpmlHelper;
 use WeAreHausTech\WpProductSync\Classes\Products;
 use WeAreHausTech\WpProductSync\Classes\Taxonomies;
 use WeAreHausTech\WpProductSync\Helpers\ConfigHelper;
-use  WeAreHausTech\WpProductSync\Helpers\LogHelper;
+use WeAreHausTech\WpProductSync\Helpers\LogHelper;
 
 class WpHelper
 {
@@ -57,12 +57,12 @@ class WpHelper
 
     public function flashRewriteRulesIfAnythingIsUpdated($productsInstance, $taxonomiesInstance)
     {
-        $settings = ConfigHelper::getSettings();
+        $flushLinks = ConfigHelper::getSettingByKey('flushLinks');
 
         $productsUpdated = $productsInstance->updated > 0 || $productsInstance->created > 0;
         $taxonomiesUpdated = $taxonomiesInstance->updatedTaxonimies > 0 || $taxonomiesInstance->createdTaxonomies > 0;
 
-        if (!empty($settings['flushLinks']) && ($productsUpdated || $taxonomiesUpdated)) {
+        if ($flushLinks && ($productsUpdated || $taxonomiesUpdated)) {
             flush_rewrite_rules(false);
         }
     }
@@ -614,6 +614,38 @@ class WpHelper
         }
 
         return $wpdb->get_results($query, ARRAY_A);
+    }
+
+    public function setSoftDeletedStatus($term_id, $status, $taxonomy)
+    {
+        update_term_meta($term_id, 'vendure_soft_deleted', $status);
+        self::log(['Soft deleting taxonomy', $taxonomy, $term_id]);
+    }
+
+    public function hardDeleteTerm($term_id, $taxonomy)
+    {
+        global $wpdb;
+
+        $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM $wpdb->termmeta WHERE term_id = %d",
+                $term_id
+            )
+        );
+
+        $wpdb->delete(
+            $wpdb->term_taxonomy,
+            array('term_id' => $term_id),
+            array('%d')
+        );
+
+        $wpdb->delete(
+            $wpdb->terms,
+            array('term_id' => $term_id),
+            array('%d')
+        );
+
+        self::log(['Deleting taxonomy', $taxonomy, $term_id]);
     }
 }
 
