@@ -22,6 +22,7 @@ class BaseSyncProducts
 
         add_action('admin_init', [__CLASS__, 'addAdminColumns']);
         add_action('admin_notices', [__CLASS__, 'showSoftDeletedNotice']);
+        add_action('template_redirect', [__CLASS__, 'preventSoftDeletedTermAccess']);
 
     }
 
@@ -43,8 +44,22 @@ class BaseSyncProducts
                 <p>There are currently <strong>{$softDeletedCount} soft-deleted terms</strong> in this taxonomy. These terms are hidden from the frontend but remain in the database for future reference.</p>
             </div>
             HTML;
-        
+
             echo $message;
+        }
+    }
+    public static function preventSoftDeletedTermAccess()
+    {
+        if (is_tax()) {
+            $term = get_queried_object();
+
+            if ($term && !is_wp_error($term)) {
+                $isSoftDeleted = get_term_meta($term->term_id, 'vendure_soft_deleted', true);
+
+                if ($isSoftDeleted) {
+                    wp_redirect(home_url());
+                }
+            }
         }
     }
 
