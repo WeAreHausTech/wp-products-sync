@@ -7,8 +7,8 @@ use WeAreHausTech\WpProductSync\Helpers\ConfigHelper;
 class AdminUI
 {
     private static $vendureColumns = [
-        'vendure_id' => 'Vendure ID',
-        'vendure_soft_deleted' => 'Status'
+
+        'vendure_soft_deleted' => 'Status in Vendure',
     ];
 
     public static function init(): void
@@ -34,7 +34,7 @@ class AdminUI
             $message = <<<HTML
             <div class="notice notice-error is-dismissible">
                 <p style="font-weight: 700;">Ecom components</p>
-                <p>There are currently <strong>{$softDeletedCount} soft-deleted terms</strong> in this taxonomy. These terms are hidden from the frontend but remain in the database for future reference.</p>
+                <p>There are currently <strong>{$softDeletedCount} deleted or inactivated terms</strong> in this taxonomy. These terms are hidden from the frontend but remain in the database for future reference.</p>
             </div>
             HTML;
 
@@ -84,8 +84,72 @@ class AdminUI
         }
 
         foreach ($taxonomies as $taxonomy) {
+            add_action("{$taxonomy['wp']}_add_form_fields", [__CLASS__, 'addVendureIdField']);
+            add_action("{$taxonomy['wp']}_edit_form_fields", [__CLASS__, 'editVendureIdField'], 10, 2);
+            add_action("created_{$taxonomy['wp']}", [__CLASS__, 'saveVendureIdField'], 10, 2);
+            add_action("edited_{$taxonomy['wp']}", [__CLASS__, 'saveVendureIdField'], 10, 2);
             add_filter('manage_edit-' . $taxonomy['wp'] . '_columns', [__CLASS__, 'addVendureColumns']);
             add_filter('manage_' . $taxonomy['wp'] . '_custom_column', [__CLASS__, 'addVendureColumnValues'], 10, 3);
+        }
+    }
+
+    public static function getVendureIdKey($taxonomy)
+    {
+        $configHelper = new ConfigHelper();
+        $taxonomies = $configHelper->getTaxonomiesFromConfig();
+
+        foreach ($taxonomies as $tax) {
+            if ($tax['wp'] === $taxonomy) {
+                return $tax['type'] === 'collection' ? 'vendure_collection_id' : 'vendure_term_id';
+            }
+        }
+        return null;
+    }
+    public static function addVendureIdField()
+    {
+        $taxonomy = $_GET['taxonomy'];
+        $fieldKey = self::getVendureIdKey($taxonomy);
+
+        if (!$fieldKey)
+            return;
+
+        ?>
+        <div class="form-field">
+            <label for="<?php echo esc_attr($fieldKey); ?>">Vendure id</label>
+            <input type="text" name="<?php echo esc_attr($fieldKey); ?>" id="<?php echo esc_attr($fieldKey); ?>" value="">
+        </div>
+        <?php
+    }
+
+    public static function editVendureIdField($term)
+    {
+        $taxonomy = $_GET['taxonomy'];
+        $fieldKey = self::getVendureIdKey($taxonomy);
+        if (!$fieldKey)
+            return;
+
+        $fieldValue = get_term_meta($term->term_id, $fieldKey, true);
+        ?>
+        <tr class="form-field">
+            <th scope="row"><label for="<?php echo esc_attr($fieldKey); ?>">Vendure id</label>
+            </th>
+            <td>
+                <input type="text" name="<?php echo esc_attr($fieldKey); ?>" id="<?php echo esc_attr($fieldKey); ?>"
+                    value="<?php echo esc_attr($fieldValue); ?>">
+            </td>
+        </tr>
+        <?php
+    }
+
+    public static function saveVendureIdField($term_id)
+    {
+        $taxonomy = get_term($term_id)->taxonomy;
+        $fieldKey = self::getVendureIdKey($taxonomy);
+        if (!$fieldKey)
+            return;
+
+        if (isset($_POST[$fieldKey])) {
+            update_term_meta($term_id, $fieldKey, sanitize_text_field($_POST[$fieldKey]));
         }
     }
 
@@ -104,9 +168,6 @@ class AdminUI
         }
 
         switch ($column_name) {
-            case 'vendure_id':
-                $collectionId = get_term_meta($term_id, 'vendure_collection_id', true);
-                return !empty($collectionId) ? $collectionId : get_term_meta($term_id, 'vendure_term_id', true);
             case 'vendure_soft_deleted':
                 return self::getSoftDeletedTemplate($term_id);
             default:
@@ -118,6 +179,6 @@ class AdminUI
     {
         $softDeleted = get_term_meta($term_id, 'vendure_soft_deleted', true);
 
-        return $softDeleted ? '<span style="color: red; font-weight: bold;">Deleted</span>' : 'Active';
+        return $softDeleted ? '<span style="color: red; font-weight: bold;">Deleted or Inactivated</span>' : 'Active';
     }
 }
