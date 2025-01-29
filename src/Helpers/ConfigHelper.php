@@ -9,6 +9,8 @@ class ConfigHelper
     public $defaultLang = '';
     public $useWpml = false;
 
+    private static $cachedConfig = null;
+
     public function __construct()
     {
         $wpmlHelper = new WpmlHelper();
@@ -16,16 +18,63 @@ class ConfigHelper
         $this->defaultLang = $wpmlHelper->getDefaultLanguage();
     }
 
+    public static function getConfig()
+    {
+
+        if (self::$cachedConfig !== null) {
+            return self::$cachedConfig;
+        }
+
+        if (!class_exists('ACF')) {
+            return [];
+
+        }
+
+        $configFilePath = HAUS_ECOM_PLUGIN_PATH . '/config.php';
+        $customFieldsConfig = file_exists($configFilePath) ? require $configFilePath : [];
+
+
+        $flushLinks = get_field('vendure-settings_vendure-settings-flushlinks', 'option') ?? false;
+        $softDelete = get_field('vendure-settings_vendure-settings-softDelete', 'option') ?? false;
+        $vendure_taxonomies = get_field('vendure-taxonomies', 'option');
+
+        $taxonomies = [];
+
+        if ($vendure_taxonomies) {
+            foreach ($vendure_taxonomies as $taxonomy) {
+                $taxonomies[$taxonomy['vendure-taxonomy-type']] = [
+                    "wp" => $taxonomy['vendure-taxonomy-wp'],
+                    "vendure" => $taxonomy['vendure-taxonomy-facetCode'] ?? null,
+                    "type" => $taxonomy['vendure-taxonomy-type'],
+                    "rootCollectionId" => $taxonomy['vendure-taxonomy-collectionId'] ?? null
+                ];
+            }
+        }
+
+        $baseConfig = [
+            "taxonomies" => $taxonomies,
+            'settings' => [
+                'flushLinks' => $flushLinks,
+                'softDelete' => $softDelete
+            ]
+        ];
+
+        $config = array_merge_recursive($baseConfig, $customFieldsConfig);
+        self::$cachedConfig = $config;
+
+        return $config;
+    }
+
     public function getTaxonomiesFromConfig()
     {
-        $config = require(HAUS_ECOM_PLUGIN_PATH . '/config.php');
+        $config = self::getConfig();
 
         if (!isset($config)) {
             WP_CLI::error('No config file found');
         }
 
-        if (isset($config['productSync']) && isset($config['productSync']['taxonomies'])) {
-            return $config['productSync']['taxonomies'];
+        if (isset($config) && isset($config['taxonomies'])) {
+            return $config['taxonomies'];
         }
 
         return [];
@@ -156,7 +205,7 @@ class ConfigHelper
 
     static function getSettings()
     {
-        $config = require(HAUS_ECOM_PLUGIN_PATH . '/config.php');
+        $config = self::getConfig();
 
         if (isset($config['settings'])) {
             return $config['settings'];

@@ -12,8 +12,6 @@ use WeAreHausTech\WpProductSync\Classes\Relations;
 use WeAreHausTech\WpProductSync\Helpers\LockHelper;
 use WeAreHausTech\WpProductSync\Helpers\WpHelper;
 use WeAreHausTech\WpProductSync\Helpers\VendureHelper;
-use WeAreHausTech\WpProductSync\Helpers\ConfigHelper;
-
 class SyncProductData extends \WP_CLI_Command
 {
 
@@ -28,7 +26,6 @@ class SyncProductData extends \WP_CLI_Command
             $productsInstance = new Products();
             $wpHelper = new WpHelper();
             $vendureHelper = new VendureHelper();
-            $configHelper = new ConfigHelper();
 
             // sync taxonomies
             $taxonomiesInstance->syncTaxonomies();
