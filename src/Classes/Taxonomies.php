@@ -51,27 +51,12 @@ class Taxonomies
                 $rootCollection = $taxonomyInfo['rootCollectionId'] ?? $venudreDefaultRootCollection;
                 $vendureValues = $vendureHelper->getCollectionsFromVendure($rootCollection);
                 $wpTerms = $wpHelper->getAllCollectionsFromWp($taxonomyInfo['wp']);
-                $this->findMissMatchedTaxonomies($taxonomyInfo['wp'], $vendureValues, $wpTerms);
                 $this->syncAttributes($taxonomyInfo['wp'], $vendureValues, $wpTerms, $rootCollection);
                 continue;
             } else {
                 $vendureValues = $facets[$taxonomyInfo['vendure']];
                 $wpTerms = $wpHelper->getAllTermsFromWp($taxonomyInfo['wp']);
-                $this->findMissMatchedTaxonomies($taxonomyInfo['wp'], $vendureValues, $wpTerms);
                 $this->syncAttributes($taxonomyInfo['wp'], $vendureValues, $wpTerms);
-            }
-        }
-    }
-
-    public function findMissMatchedTaxonomies($taxonomy, $vendureTerms, $wpTerms)
-    {
-        foreach ($vendureTerms as $vendureId => $vendureTerm) {
-            foreach ($wpTerms as $wpId => $wpTerm) {
-                if ($wpTerm['name'] === null || ($wpId === $vendureId && html_entity_decode($wpTerm['name']) !== $vendureTerm['name'])) {
-                    $this->deleteTranslation($taxonomy, $wpTerm);
-                    $this->deleteTerm($wpTerm['term_id'] ?? null, $taxonomy);
-                    WpHelper::log(['Deleted taxonomy missmatch', $taxonomy, $vendureTerm['name']]);
-                }
             }
         }
     }

@@ -158,8 +158,8 @@ class ConfigHelper
     {
         $config = require(HAUS_ECOM_PLUGIN_PATH . '/config.php');
 
-        if (isset($config['settings'])) {
-            return $config['settings'];
+        if (isset($config['productSync']['settings'])) {
+            return $config['productSync']['settings'];
         }
 
         return [];
