@@ -76,13 +76,29 @@ class Taxonomies
         }
     }
 
+    public function wpTermsThatAreSoftdeleted($wpTerms)
+    {
+        return array_filter($wpTerms, function ($term) {
+            return $term['vendure_soft_deleted'] === "1";
+        });
+    }
+
     public function syncAttributes($taxonomy, $vendureTerms, $wpTerms, $rootCollection = null)
     {
+        // Is soft deleted in WP, exists in Vendure
+        $restore = array_intersect_key($this->wpTermsThatAreSoftdeleted($wpTerms), $vendureTerms);
+
+        array_walk($restore, function ($term) use ($taxonomy) {
+            $this->restoreTerm($term, $taxonomy);
+        });
 
         //Exists in WP, not in Vendure
         $delete = array_diff_key($wpTerms, $vendureTerms);
 
         array_walk($delete, function ($term) use ($taxonomy) {
+            if ($term['vendure_soft_deleted'] === "1") {
+                return;
+            }
             $this->deleteTranslation($taxonomy, $term);
             $this->deleteTerm($term['term_id'], $taxonomy);
         });
@@ -265,6 +281,23 @@ class Taxonomies
         }
 
         return $updateLang;
+    }
+
+    public function restoreTerm($term, $taxonomy)
+    {
+        $wpHelper = new WpHelper();
+        $wpHelper->setSoftDeletedStatus($term['term_id'], false, taxonomy: $taxonomy);
+
+        if (!isset($term['translations'])) {
+            return;
+        }
+
+        foreach ($term['translations'] as $lang => $translation) {
+            if ($translation && $translation['term_id']) {
+
+                $wpHelper->setSoftDeletedStatus($translation['term_id'], false, $taxonomy);
+            }
+        }
     }
 
     public function deleteTerm($id, $taxonomy)
