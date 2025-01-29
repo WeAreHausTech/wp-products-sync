@@ -17,6 +17,6 @@ class BaseSyncProducts
             }
         });
 
-        \WeAreHausTech\WpProductSync\AdminUI::init();
+        \WeAreHausTech\WpProductSync\Admin\AdminUI::init();
     }
 }

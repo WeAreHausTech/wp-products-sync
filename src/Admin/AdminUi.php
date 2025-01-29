@@ -1,6 +1,6 @@
 <?php
 
-namespace WeAreHausTech\WpProductSync;
+namespace WeAreHausTech\WpProductSync\Admin;
 
 use WeAreHausTech\WpProductSync\Helpers\ConfigHelper;
 
@@ -11,11 +11,12 @@ class AdminUI
         'vendure_soft_deleted' => 'Status'
     ];
 
-    public static function init()
+    public static function init(): void
     {
         add_action('admin_init', [__CLASS__, 'addAdminColumns']);
         add_action('admin_notices', [__CLASS__, 'showSoftDeletedNotice']);
         add_action('template_redirect', [__CLASS__, 'preventSoftDeletedTermAccess']);
+
     }
 
     public static function showSoftDeletedNotice()
