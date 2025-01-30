@@ -33,9 +33,11 @@ class Products
 
             $this->deleteProduct($product['id']);
 
-            foreach ($product['translations'] as $lang => $translation) {
-                if ($translation['id']) {
-                    $this->deleteProduct($translation['id']);
+            if (isset($product['translations'])) {
+                foreach ($product['translations'] as $lang => $translation) {
+                    if ($translation['id']) {
+                        $this->deleteProduct($translation['id']);
+                    }
                 }
             }
         });
