@@ -30,7 +30,7 @@ class Taxonomies
         $taxonomies = $configHelper->getTaxonomiesFromConfig();
 
         if (!isset($taxonomies) || empty((array) $taxonomies)) {
-            WpHelper::log(['No taxonomies found in config.json']);
+            WpHelper::log(['No taxonomies found in settings']);
             return;
         }
 
@@ -138,25 +138,23 @@ class Taxonomies
         foreach ($update as $lang) {
             $vendureSlug = $this->getVendureTermSlug($vendureTerm);
             $customFields = isset($vendureTerm['customFields']) ? $vendureTerm['customFields'] : null;
-            $description = isset($vendureTerm['description']) ? $vendureTerm['description'] : '';
             $position = isset($vendureTerm['position']) ? $vendureTerm['position'] : null;
 
             if ($lang === $this->defaultLang) {
                 $termImage = $vendureTerm['assets'] ? $vendureTerm['assets'][0]['source'] : null;
-                $this->updateTaxonomy($wpTerm['term_id'] ?? null, $taxonomy, $vendureTerm['name'], $vendureSlug, $vendureTerm['updatedAt'], $customFields, $description, $termImage, $position);
+                $this->updateTaxonomy($wpTerm['term_id'] ?? null, $taxonomy, $vendureTerm['name'], $vendureSlug, $vendureTerm['updatedAt'], $customFields, $termImage, $position);
                 continue;
             }
 
             if (isset($wpTerm['translations'][$lang]['term_id'])) {
                 $translatedTermId = (int) $wpTerm['translations'][$lang]['term_id'];
                 $translatedName = $vendureTerm['translations'][$lang]['name'];
-                $translatedDescription = $vendureTerm['translations'][$lang]['description'] ?? '';
                 $name = $vendureTerm['translations'][$lang]['name'];
                 $data = $vendureTerm['translations'][$lang];
                 $termImage = $vendureTerm['translations'][$lang]['assets'] ? $vendureTerm['translations'][$lang]['assets'][0]['source'] : null;
 
                 $translatedSlug = $this->getSlugForTranslations($name, $data, $lang);
-                $this->updateTaxonomy($translatedTermId, $taxonomy, $translatedName, $translatedSlug, $vendureTerm['updatedAt'], $vendureTerm['translations'][$lang]['customFields'] ?? null, $translatedDescription, $termImage, $position);
+                $this->updateTaxonomy($translatedTermId, $taxonomy, $translatedName, $translatedSlug, $vendureTerm['updatedAt'], $vendureTerm['translations'][$lang]['customFields'] ?? null, $termImage, $position);
             } else {
                 $configHelper = new ConfigHelper();
                 $isCollection = $configHelper->isCollection($taxonomy);
@@ -189,12 +187,11 @@ class Taxonomies
         return $data;
     }
 
-    public function updateTaxonomy($termID, $taxonomy, $name, $slug, $updatedAt, $customFields = null, $description = '', $termImage = null, $position = null)
+    public function updateTaxonomy($termID, $taxonomy, $name, $slug, $updatedAt, $customFields = null, $termImage = null, $position = null)
     {
         $args = array(
             'name' => $name,
             'slug' => $slug,
-            'description' => $description,
         );
 
         wp_update_term($termID, $taxonomy, $args);
@@ -225,13 +222,12 @@ class Taxonomies
     {
         $name = $vendureTerm['translations'][$lang]['name'];
         $slug = $this->getSlugForTranslations($vendureTerm['name'], $vendureTerm['translations'][$lang], $lang);
-        $description = $vendureTerm['translations'][$lang]['description'] ?? '';
         $termImage = $vendureTerm['translations'][$lang]['assets'] ? $vendureTerm['translations'][$lang]['assets'][0]['source'] : null;
 
         $customFields = $vendureTerm['translations'][$lang]['customFields'] ? $this->getCustomFields($vendureTerm['translations'][$lang]['customFields']) : null;
         $position = isset($vendureTerm['position']) ? $vendureTerm['position'] : null;
 
-        $term = $this->insertTerm($vendureTerm['id'], $name, $slug, $taxonomy, $vendureType, $vendureTerm['updatedAt'], $customFields, $description, $termImage, $position);
+        $term = $this->insertTerm($vendureTerm['id'], $name, $slug, $taxonomy, $vendureType, $vendureTerm['updatedAt'], $customFields, $termImage, $position);
 
         $translations[$lang] = $term;
         $wmplType = 'tax_' . $taxonomy;
@@ -338,11 +334,10 @@ class Taxonomies
         $slug = isset($value['slug']) ? $value['slug'] : sanitize_title($value['name']);
 
         $customFields = isset($value['customFields']) ? $this->getCustomFields($value['customFields']) : null;
-        $description = $value['description'] ?? '';
         $termImage = isset($value['assets'][0]['source']) ? $value['assets'][0]['source'] : null;
         $position = isset($value['position']) ? $value['position'] : null;
 
-        $term = $this->insertTerm($value['id'], $value['name'], $slug, $taxonomy, $vendureType, $value['updatedAt'], $customFields, $description, $termImage, $position);
+        $term = $this->insertTerm($value['id'], $value['name'], $slug, $taxonomy, $vendureType, $value['updatedAt'], $customFields, $termImage, $position);
 
         WpHelper::log(['Creating taxonomy', $taxonomy, $value['name'], $slug]);
 
@@ -358,11 +353,10 @@ class Taxonomies
             $slug = $this->getSlugForTranslations($value['name'], $translation, $lang);
 
             $customFields = $translation['customFields'] ? $this->getCustomFields($translation['customFields']) : null;
-            $description = $translation['description'] ?? '';
 
             $termImage = isset($translation['assets'][0]['source']) ? $translation['assets'][0]['source'] : null;
             $position = isset($value['position']) ? $value['position'] : null;
-            $term = $this->insertTerm($value['id'], $translation['name'], $slug, $taxonomy, $vendureType, $value['updatedAt'], $customFields, $description, $termImage, $position);
+            $term = $this->insertTerm($value['id'], $translation['name'], $slug, $taxonomy, $vendureType, $value['updatedAt'], $customFields, $termImage, $position);
             $translations[$lang] = $term;
 
         }
@@ -385,9 +379,9 @@ class Taxonomies
         }
     }
 
-    public function insertTerm($vendureId, $name, $slug, $taxonomy, $vendureType, $updatedAt, $customFields = null, $description = '', $termImage = null, $position = null)
+    public function insertTerm($vendureId, $name, $slug, $taxonomy, $vendureType, $updatedAt, $customFields = null, $termImage = null, $position = null)
     {
-        $term = wp_insert_term($name, $taxonomy, ['slug' => $slug, 'description' => $description]);
+        $term = wp_insert_term($name, $taxonomy, ['slug' => $slug]);
 
         if (is_wp_error($term)) {
             //TODO log error somewhere

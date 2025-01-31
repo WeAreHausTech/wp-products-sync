@@ -1,17 +1,18 @@
 <?php
 namespace WeAreHausTech\WpProductSync\Queries;
+use WeAreHausTech\WpProductSync\Helpers\ConfigHelper;
 
 class Facet extends BaseQuery
 {
     public function get($lang)
     {
 
-        $config = require(HAUS_ECOM_PLUGIN_PATH . '/config.php');
+        $config = ConfigHelper::getConfig();
 
-        $customFields = $config['productSync']['facets']['customFieldsQuery'] ?? '';
-          
+        $customFields = $config['facets']['customFieldsQuery'] ?? '';
+
         $this->query =
-         "query {
+            "query {
                 facets {
                     items {
                         id

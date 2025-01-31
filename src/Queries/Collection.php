@@ -1,12 +1,13 @@
 <?php
 namespace WeAreHausTech\WpProductSync\Queries;
+use WeAreHausTech\WpProductSync\Helpers\ConfigHelper;
 class Collection extends BaseQuery
 {
     public function get($lang, $skip, $take, $parentIds = [])
     {
 
-        $config = require(HAUS_ECOM_PLUGIN_PATH . '/config.php');
-        $customFields = $config['productSync']['collections']['customFieldsQuery'] ?? '';
+        $config = ConfigHelper::getConfig();
+        $customFields = $config['collections']['customFieldsQuery'] ?? '';
 
         $encodedParentIds = json_encode($parentIds);
 
@@ -27,7 +28,6 @@ class Collection extends BaseQuery
                     id
                     name
                     slug
-                    description
                     position
                     assets {
                         source

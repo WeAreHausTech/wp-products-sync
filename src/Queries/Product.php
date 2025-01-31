@@ -1,5 +1,6 @@
 <?php
 namespace WeAreHausTech\WpProductSync\Queries;
+use WeAreHausTech\WpProductSync\Helpers\ConfigHelper;
 
 // For productsSync only
 
@@ -8,9 +9,9 @@ class Product extends BaseQuery
   public function get($lang, $skip = 0, $take = 100)
   {
 
-    $config = require(HAUS_ECOM_PLUGIN_PATH . '/config.php');
+    $config = ConfigHelper::getConfig();
 
-    $customFields = $config['productSync']['products']['customFieldsQuery'] ?? '';
+    $customFields = $config['products']['customFieldsQuery'] ?? '';
 
     $options = "(options: {
             take: $take,
