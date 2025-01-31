@@ -464,6 +464,7 @@ class WpHelper
                     "vendure_term_id" => $term["vendure_term_id"],
                     "lang" => $this->defaultLang,
                     "vendure_updated_at" => $term["vendure_updated_at"],
+                    "vendure_soft_deleted" => isset($term["vendure_soft_deleted"]) ? $term["vendure_soft_deleted"] : false,
                     "translations" => [],
                 );
             }
@@ -481,6 +482,10 @@ class WpHelper
 
     public function termsToDeleteQuery($taxonomy, $vendureType, $wpmlType)
     {
+
+        $softDelete = ConfigHelper::getSettingByKey('softDelete');
+        $softDeleteCondition = $softDelete ? "AND (tm2.meta_value != '1')" : "";
+
         global $wpdb;
         if ($this->useWpml) {
             return $wpdb->prepare(
@@ -496,9 +501,7 @@ class WpHelper
                     OR tm.meta_value = ''
                     OR icl.language_code IS NULL
                )
-                AND (
-                    tm2.meta_value = '1'
-                )",
+                $softDeleteCondition",
                 $wpmlType,
                 $vendureType,
                 $taxonomy
@@ -515,9 +518,7 @@ class WpHelper
                     OR tm.meta_value IS NULL
                     OR tm.meta_value = ''
                 )
-                AND (
-                    tm2.meta_value = '1'
-                )",
+                $softDeleteCondition",
                 $vendureType,
                 $taxonomy
             );

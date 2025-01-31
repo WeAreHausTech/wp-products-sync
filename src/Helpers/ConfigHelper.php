@@ -207,8 +207,8 @@ class ConfigHelper
     {
         $config = self::getConfig();
 
-        if (isset($config['settings'])) {
-            return $config['settings'];
+        if (isset($config['productSync']['settings'])) {
+            return $config['productSync']['settings'];
         }
 
         return [];
