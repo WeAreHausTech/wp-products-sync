@@ -6,7 +6,7 @@ use WeAreHausTech\WpProductSync\Helpers\WpmlHelper;
 use WeAreHausTech\WpProductSync\Classes\Products;
 use WeAreHausTech\WpProductSync\Classes\Taxonomies;
 use WeAreHausTech\WpProductSync\Helpers\ConfigHelper;
-use  WeAreHausTech\WpProductSync\Helpers\LogHelper;
+use WeAreHausTech\WpProductSync\Helpers\LogHelper;
 
 class WpHelper
 {
@@ -57,12 +57,12 @@ class WpHelper
 
     public function flashRewriteRulesIfAnythingIsUpdated($productsInstance, $taxonomiesInstance)
     {
-        $settings = ConfigHelper::getSettings();
+        $flushLinks = ConfigHelper::getSettingByKey('flushLinks');
 
         $productsUpdated = $productsInstance->updated > 0 || $productsInstance->created > 0;
         $taxonomiesUpdated = $taxonomiesInstance->updatedTaxonimies > 0 || $taxonomiesInstance->createdTaxonomies > 0;
 
-        if (!empty($settings['flushLinks']) && ($productsUpdated || $taxonomiesUpdated)) {
+        if ($flushLinks && ($productsUpdated || $taxonomiesUpdated)) {
             flush_rewrite_rules(false);
         }
     }
@@ -290,13 +290,15 @@ class WpHelper
         $termmeta = $wpdb->prefix . 'termmeta';
         if ($this->useWpml) {
             return $wpdb->prepare(
-                "SELECT tt.term_id, tt.parent, t.name, t.slug, tm.meta_value as vendure_collection_id, tr.language_code as lang, tm2.meta_value as vendure_updated_at
+                "SELECT tt.term_id, tt.parent, t.name, t.slug, tm.meta_value as vendure_collection_id, tr.language_code as lang, tm2.meta_value as vendure_updated_at, tm3.meta_value as vendure_soft_deleted
              FROM wp_term_taxonomy tt 
              LEFT JOIN $terms t ON tt.term_id = t.term_id 
              LEFT JOIN $termmeta tm ON tt.term_id = tm.term_id
                 AND tm.meta_key = 'vendure_collection_id'
              LEFT JOIN $termmeta tm2 ON tt.term_id = tm2.term_id
                     AND tm2.meta_key = 'vendure_updated_at'
+            LEFT JOIN $termmeta tm3 ON tt.term_id = tm3.term_id
+                AND tm3.meta_key = 'vendure_soft_deleted'
              LEFT JOIN {$wpdb->prefix}icl_translations tr 
              ON tt.term_taxonomy_id = tr.element_id
              AND tr.element_type = 'tax_{$taxonomy}'
@@ -306,13 +308,15 @@ class WpHelper
             );
         } else {
             return $wpdb->prepare(
-                "SELECT tt.term_id, tt.parent, t.name, t.slug, tm.meta_value as vendure_collection_id, tm2.meta_value as vendure_updated_at
+                "SELECT tt.term_id, tt.parent, t.name, t.slug, tm.meta_value as vendure_collection_id, tm2.meta_value as vendure_updated_at,  tm3.meta_value as vendure_soft_deleted
              FROM wp_term_taxonomy tt 
              LEFT JOIN $terms t ON tt.term_id = t.term_id 
              LEFT JOIN $termmeta tm ON tt.term_id = tm.term_id
                 AND tm.meta_key = 'vendure_collection_id'
              LEFT JOIN $termmeta tm2 ON tt.term_id = tm2.term_id
-                    AND tm2.meta_key = 'vendure_updated_at'
+                AND tm2.meta_key = 'vendure_updated_at'
+            LEFT JOIN $termmeta tm3 ON tt.term_id = tm3.term_id
+                AND tm3.meta_key = 'vendure_soft_deleted'
              WHERE tm.meta_value IS NOT NULL
              AND taxonomy = %s",
                 $taxonomy
@@ -354,6 +358,7 @@ class WpHelper
                     "vendure_collection_id" => $term["vendure_collection_id"],
                     "lang" => $this->defaultLang,
                     "vendure_updated_at" => $term["vendure_updated_at"],
+                    "vendure_soft_deleted" => isset($term["vendure_soft_deleted"]) ? $term["vendure_soft_deleted"] : false,
                     "translations" => [],
                 ];
             }
@@ -391,13 +396,15 @@ class WpHelper
 
         if ($this->useWpml) {
             return $wpdb->prepare(
-                "SELECT tt.term_id, t.name, tm.meta_value as vendure_term_id, tr.language_code as lang, tm2.meta_value as vendure_updated_at
+                "SELECT tt.term_id, t.name, tm.meta_value as vendure_term_id, tr.language_code as lang, tm2.meta_value as vendure_updated_at,  tm3.meta_value as vendure_soft_deleted
                 FROM wp_term_taxonomy tt 
                 LEFT JOIN $terms t ON tt.term_id = t.term_id 
                 LEFT JOIN $termmeta tm ON tt.term_id = tm.term_id
                     AND tm.meta_key = 'vendure_term_id'
                 LEFT JOIN $termmeta tm2 ON tt.term_id = tm2.term_id
                     AND tm2.meta_key = 'vendure_updated_at'
+                LEFT JOIN $termmeta tm3 ON tt.term_id = tm3.term_id
+                    AND tm3.meta_key = 'vendure_soft_deleted'
                 LEFT JOIN {$wpdb->prefix}icl_translations tr 
                     ON tt.term_taxonomy_id = tr.element_id
                     AND tr.element_type = 'tax_{$taxonomy}'
@@ -408,12 +415,14 @@ class WpHelper
             );
         } else {
             return $wpdb->prepare(
-                "SELECT tt.term_id, t.name, tm.meta_value as vendure_term_id, tm2.meta_value as vendure_updated_at
+                "SELECT tt.term_id, t.name, tm.meta_value as vendure_term_id, tm2.meta_value as vendure_updated_at,  tm3.meta_value as vendure_soft_deleted
                 FROM wp_term_taxonomy tt 
                 LEFT JOIN $terms t ON tt.term_id = t.term_id 
                 LEFT JOIN $termmeta tm ON tt.term_id = tm.term_id
                     AND tm.meta_key = 'vendure_term_id'
                 LEFT JOIN $termmeta tm2 ON tt.term_id = tm2.term_id
+                LEFT JOIN $termmeta tm3 ON tt.term_id = tm3.term_id
+                    AND tm3.meta_key = 'vendure_soft_deleted'
                 AND tm2.meta_key = 'vendure_updated_at'
                 WHERE tm.meta_value IS NOT NULL
                 AND taxonomy= %s",
@@ -455,6 +464,7 @@ class WpHelper
                     "vendure_term_id" => $term["vendure_term_id"],
                     "lang" => $this->defaultLang,
                     "vendure_updated_at" => $term["vendure_updated_at"],
+                    "vendure_soft_deleted" => isset($term["vendure_soft_deleted"]) ? $term["vendure_soft_deleted"] : false,
                     "translations" => [],
                 );
             }
@@ -472,6 +482,10 @@ class WpHelper
 
     public function termsToDeleteQuery($taxonomy, $vendureType, $wpmlType)
     {
+
+        $softDelete = ConfigHelper::getSettingByKey('softDelete');
+        $softDeleteCondition = $softDelete ? "AND (tm2.meta_value != '1')" : "";
+
         global $wpdb;
         if ($this->useWpml) {
             return $wpdb->prepare(
@@ -479,13 +493,15 @@ class WpHelper
                 FROM wp_term_taxonomy tt
                 LEFT JOIN {$wpdb->prefix}icl_translations icl ON tt.term_id = icl.element_id AND icl.element_type = %s
                 LEFT JOIN {$wpdb->prefix}termmeta tm ON tt.term_id = tm.term_id AND tm.meta_key = %s
+                LEFT JOIN {$wpdb->prefix}termmeta tm2 ON tt.term_id = tm2.term_id AND tm.meta_key = 'vendure_soft_deleted'
                 WHERE tt.taxonomy = %s
                 AND (
                     tm.term_id IS NULL
                     OR tm.meta_value IS NULL
                     OR tm.meta_value = ''
                     OR icl.language_code IS NULL
-                )",
+               )
+                $softDeleteCondition",
                 $wpmlType,
                 $vendureType,
                 $taxonomy
@@ -495,12 +511,14 @@ class WpHelper
                 "SELECT tt.term_id
                 FROM wp_term_taxonomy tt
                 LEFT JOIN {$wpdb->prefix}termmeta tm ON tt.term_id = tm.term_id AND tm.meta_key = %s
+                LEFT JOIN {$wpdb->prefix}termmeta tm2 ON tt.term_id = tm2.term_id AND tm.meta_key = 'vendure_soft_deleted'
                 WHERE tt.taxonomy = %s
                 AND (
                     tm.term_id IS NULL
                     OR tm.meta_value IS NULL
                     OR tm.meta_value = ''
-                )",
+                )
+                $softDeleteCondition",
                 $vendureType,
                 $taxonomy
             );
@@ -614,6 +632,43 @@ class WpHelper
         }
 
         return $wpdb->get_results($query, ARRAY_A);
+    }
+
+    public function setSoftDeletedStatus($term_id, $status, $taxonomy)
+    {
+        update_term_meta($term_id, 'vendure_soft_deleted', $status);
+
+        if ($status) {
+            self::log(['Soft deleting taxonomy', $taxonomy, $term_id]);
+        } else {
+            self::log(['Restoring taxonomy', $taxonomy, $term_id]);
+        }
+    }
+
+    public function hardDeleteTerm($term_id, $taxonomy)
+    {
+        global $wpdb;
+
+        $wpdb->query(
+            $wpdb->prepare(
+                "DELETE FROM $wpdb->termmeta WHERE term_id = %d",
+                $term_id
+            )
+        );
+
+        $wpdb->delete(
+            $wpdb->term_taxonomy,
+            array('term_id' => $term_id),
+            array('%d')
+        );
+
+        $wpdb->delete(
+            $wpdb->terms,
+            array('term_id' => $term_id),
+            array('%d')
+        );
+
+        self::log(['Deleting taxonomy', $taxonomy, $term_id]);
     }
 }
 

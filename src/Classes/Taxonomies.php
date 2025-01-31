@@ -47,42 +47,43 @@ class Taxonomies
             }
 
             if ($taxonomyType === 'collection') {
-                $venudreDefaultRootCollection =  "1";
+                $venudreDefaultRootCollection = "1";
                 $rootCollection = $taxonomyInfo['rootCollectionId'] ?? $venudreDefaultRootCollection;
                 $vendureValues = $vendureHelper->getCollectionsFromVendure($rootCollection);
                 $wpTerms = $wpHelper->getAllCollectionsFromWp($taxonomyInfo['wp']);
-                $this->findMissMatchedTaxonomies($taxonomyInfo['wp'], $vendureValues, $wpTerms);
                 $this->syncAttributes($taxonomyInfo['wp'], $vendureValues, $wpTerms, $rootCollection);
                 continue;
             } else {
                 $vendureValues = $facets[$taxonomyInfo['vendure']];
                 $wpTerms = $wpHelper->getAllTermsFromWp($taxonomyInfo['wp']);
-                $this->findMissMatchedTaxonomies($taxonomyInfo['wp'], $vendureValues, $wpTerms);
                 $this->syncAttributes($taxonomyInfo['wp'], $vendureValues, $wpTerms);
             }
         }
     }
 
-    public function findMissMatchedTaxonomies($taxonomy, $vendureTerms, $wpTerms)
+    public function wpTermsThatAreSoftdeleted($wpTerms)
     {
-        foreach ($vendureTerms as $vendureId => $vendureTerm) {
-            foreach ($wpTerms as $wpId => $wpTerm) {
-                if ($wpTerm['name'] === null || ($wpId === $vendureId && html_entity_decode($wpTerm['name']) !== $vendureTerm['name'])) {
-                    $this->deleteTranslation($taxonomy, $wpTerm);
-                    $this->deleteTerm($wpTerm['term_id'] ?? null, $taxonomy);
-                    WpHelper::log(['Deleted taxonomy missmatch', $taxonomy, $vendureTerm['name']]);
-                }
-            }
-        }
+        return array_filter($wpTerms, function ($term) {
+            return $term['vendure_soft_deleted'] === "1";
+        });
     }
 
     public function syncAttributes($taxonomy, $vendureTerms, $wpTerms, $rootCollection = null)
     {
+        // Is soft deleted in WP, exists in Vendure
+        $restore = array_intersect_key($this->wpTermsThatAreSoftdeleted($wpTerms), $vendureTerms);
+
+        array_walk($restore, function ($term) use ($taxonomy) {
+            $this->restoreTerm($term, $taxonomy);
+        });
 
         //Exists in WP, not in Vendure
         $delete = array_diff_key($wpTerms, $vendureTerms);
 
         array_walk($delete, function ($term) use ($taxonomy) {
+            if ($term['vendure_soft_deleted'] === "1") {
+                return;
+            }
             $this->deleteTranslation($taxonomy, $term);
             $this->deleteTerm($term['term_id'], $taxonomy);
         });
@@ -90,7 +91,7 @@ class Taxonomies
         //Exists in Vendure, not in WP
         $create = array_diff_key($vendureTerms, $wpTerms);
 
-        array_walk($create, function ($term) use ($taxonomy) {
+        array_walk($create, callback: function ($term) use ($taxonomy) {
             $this->addNewTerm($term, $taxonomy);
         });
 
@@ -108,8 +109,8 @@ class Taxonomies
         if ($isCollection) {
             foreach ($vendureTerms as $vendureId => $vendureTerm) {
                 $wpTerm = isset($wpTerms[$vendureId]) ? $wpTerms[$vendureId] : null;
-             
-                if (empty($wpTerm) || $vendureTerm['updatedAt'] !== $wpTerm['vendure_updated_at'] ) {
+
+                if (empty($wpTerm) || $vendureTerm['updatedAt'] !== $wpTerm['vendure_updated_at']) {
                     $this->syncCollectionParents($vendureId, $vendureTerm['parentId'], $taxonomy, $rootCollection);
                 }
             }
@@ -136,9 +137,9 @@ class Taxonomies
 
         foreach ($update as $lang) {
             $vendureSlug = $this->getVendureTermSlug($vendureTerm);
-            $customFields = isset($vendureTerm['customFields']) ? $vendureTerm['customFields'] : null; 
-            $description = isset($vendureTerm['description']) ? $vendureTerm['description'] : ''; 
-            $position = isset($vendureTerm['position']) ? $vendureTerm['position'] : null; 
+            $customFields = isset($vendureTerm['customFields']) ? $vendureTerm['customFields'] : null;
+            $description = isset($vendureTerm['description']) ? $vendureTerm['description'] : '';
+            $position = isset($vendureTerm['position']) ? $vendureTerm['position'] : null;
 
             if ($lang === $this->defaultLang) {
                 $termImage = $vendureTerm['assets'] ? $vendureTerm['assets'][0]['source'] : null;
@@ -228,7 +229,7 @@ class Taxonomies
         $termImage = $vendureTerm['translations'][$lang]['assets'] ? $vendureTerm['translations'][$lang]['assets'][0]['source'] : null;
 
         $customFields = $vendureTerm['translations'][$lang]['customFields'] ? $this->getCustomFields($vendureTerm['translations'][$lang]['customFields']) : null;
-        $position = isset($vendureTerm['position']) ? $vendureTerm['position'] : null; 
+        $position = isset($vendureTerm['position']) ? $vendureTerm['position'] : null;
 
         $term = $this->insertTerm($vendureTerm['id'], $name, $slug, $taxonomy, $vendureType, $vendureTerm['updatedAt'], $customFields, $description, $termImage, $position);
 
@@ -267,31 +268,35 @@ class Taxonomies
         return $updateLang;
     }
 
+    public function restoreTerm($term, $taxonomy)
+    {
+        $wpHelper = new WpHelper();
+        $wpHelper->setSoftDeletedStatus($term['term_id'], false, taxonomy: $taxonomy);
+
+        if (!isset($term['translations'])) {
+            return;
+        }
+
+        foreach ($term['translations'] as $lang => $translation) {
+            if ($translation && $translation['term_id']) {
+
+                $wpHelper->setSoftDeletedStatus($translation['term_id'], false, $taxonomy);
+            }
+        }
+    }
+
     public function deleteTerm($id, $taxonomy)
     {
-        global $wpdb;
+        $softDelete = ConfigHelper::getSettingByKey('softDelete');
+        $wpHelper = new WpHelper();
+        if ($softDelete) {
+            $wpHelper->setSoftDeletedStatus($id, true, $taxonomy);
+            $this->deletedTaxonomies++;
+            return;
+        }
 
-        $wpdb->query(
-            $wpdb->prepare(
-                "DELETE FROM $wpdb->termmeta WHERE term_id = %d",
-                $id
-            )
-        );
-
-        $wpdb->delete(
-            $wpdb->term_taxonomy,
-            array('term_id' => $id),
-            array('%d')
-        );
-
-        $wpdb->delete(
-            $wpdb->terms,
-            array('term_id' => $id),
-            array('%d')
-        );
-
+        $wpHelper->hardDeleteTerm($id, $taxonomy);
         WpHelper::log(['Deleting taxonomy', $taxonomy, $id]);
-
         $this->deletedTaxonomies++;
     }
 
@@ -335,10 +340,10 @@ class Taxonomies
         $customFields = isset($value['customFields']) ? $this->getCustomFields($value['customFields']) : null;
         $description = $value['description'] ?? '';
         $termImage = isset($value['assets'][0]['source']) ? $value['assets'][0]['source'] : null;
-        $position = isset($value['position']) ? $value['position'] : null; 
+        $position = isset($value['position']) ? $value['position'] : null;
 
         $term = $this->insertTerm($value['id'], $value['name'], $slug, $taxonomy, $vendureType, $value['updatedAt'], $customFields, $description, $termImage, $position);
-       
+
         WpHelper::log(['Creating taxonomy', $taxonomy, $value['name'], $slug]);
 
         return $term;
@@ -359,7 +364,7 @@ class Taxonomies
             $position = isset($value['position']) ? $value['position'] : null;
             $term = $this->insertTerm($value['id'], $translation['name'], $slug, $taxonomy, $vendureType, $value['updatedAt'], $customFields, $description, $termImage, $position);
             $translations[$lang] = $term;
-            
+
         }
 
         WpHelper::log(['Creating taxonomy translation', $lang, $taxonomy, $value['name'], $slug]);
@@ -472,6 +477,6 @@ class Taxonomies
             wp_update_term((int) $id['id'], $taxonomy, ['parent' => (int) $id['parentId']]);
         }
 
-        delete_option($taxonomy . '_children'); 
+        delete_option($taxonomy . '_children');
     }
 }

@@ -134,7 +134,7 @@ class ConfigHelper
 
         return $collections;
     }
-    
+
     public function getFacetTaxonomyPostTypes()
     {
         $taxonomies = $this->getTaxonomiesFromConfig();
@@ -158,11 +158,23 @@ class ConfigHelper
     {
         $config = require(HAUS_ECOM_PLUGIN_PATH . '/config.php');
 
-        if (isset($config['settings'])) {
-            return $config['settings'];
+        if (isset($config['productSync']['settings'])) {
+            return $config['productSync']['settings'];
         }
 
         return [];
+    }
+
+
+    static function getSettingByKey($key)
+    {
+        $settings = self::getSettings();
+
+        if (isset($settings[$key])) {
+            return $settings[$key];
+        }
+
+        return false;
     }
 }
 
