@@ -30,7 +30,7 @@ class Taxonomies
         $taxonomies = $configHelper->getTaxonomiesFromConfig();
 
         if (!isset($taxonomies) || empty((array) $taxonomies)) {
-            WpHelper::log(['No taxonomies found in config.json']);
+            WpHelper::log(['No taxonomies found in settings']);
             return;
         }
 
