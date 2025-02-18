@@ -9,6 +9,8 @@ class ConfigHelper
     public $defaultLang = '';
     public $useWpml = false;
 
+    private static $cachedConfig = null;
+
     public function __construct()
     {
         $wpmlHelper = new WpmlHelper();
@@ -16,16 +18,77 @@ class ConfigHelper
         $this->defaultLang = $wpmlHelper->getDefaultLanguage();
     }
 
+    public static function getConfig()
+    {
+
+        if (self::$cachedConfig !== null) {
+            return self::$cachedConfig;
+        }
+
+        if (!class_exists('ACF')) {
+            return [];
+
+        }
+
+        $configFilePath = HAUS_ECOM_PLUGIN_PATH . '/config.php';
+        $customFieldsConfig = file_exists($configFilePath) ? require $configFilePath : [];
+
+        $facets = get_field('vendure-taxonomies-facet', 'option');
+        $collections = get_field('vendure-taxonomies-collection', 'option');
+
+        $taxonomies = [];
+
+        if ($facets) {
+            foreach ($facets as $taxonomy) {
+                $taxonomies[$taxonomy['vendure-taxonomy-facetCode']] = [
+                    "wp" => $taxonomy['vendure-taxonomy-wp'],
+                    "vendure" => $taxonomy['vendure-taxonomy-facetCode'] ?? null,
+                    "type" => 'facet',
+                    "rootCollectionId" => null
+                ];
+            }
+        }
+        if ($collections) {
+            foreach ($collections as $taxonomy) {
+                $taxonomies['collection'] = [
+                    "wp" => $taxonomy['vendure-taxonomy-wp'],
+                    "vendure" => null,
+                    "type" => 'collection',
+                    "rootCollectionId" => $taxonomy['vendure-taxonomy-collectionId'] ?? null
+                ];
+            }
+        }
+
+        $baseConfig = [
+            "taxonomies" => $taxonomies,
+            'settings' => [
+                'flushLinks' => (new self())->functionGetFieldValue('vendure-settings_vendure-settings-flushlinks'),
+                'softDelete' => (new self())->functionGetFieldValue('vendure-settings_vendure-settings-softDelete'),
+            ]
+        ];
+
+        $config = array_merge_recursive($baseConfig, $customFieldsConfig);
+        self::$cachedConfig = $config;
+
+        return $config;
+    }
+
+    public function functionGetFieldValue($field)
+    {
+        $value = get_field($field, 'option') ?? false;
+        return $value === "1" || $value === true;
+    }
+
     public function getTaxonomiesFromConfig()
     {
-        $config = require(HAUS_ECOM_PLUGIN_PATH . '/config.php');
+        $config = self::getConfig();
 
         if (!isset($config)) {
             WP_CLI::error('No config file found');
         }
 
-        if (isset($config['productSync']) && isset($config['productSync']['taxonomies'])) {
-            return $config['productSync']['taxonomies'];
+        if (isset($config) && isset($config['taxonomies'])) {
+            return $config['taxonomies'];
         }
 
         return [];
@@ -156,10 +219,10 @@ class ConfigHelper
 
     static function getSettings()
     {
-        $config = require(HAUS_ECOM_PLUGIN_PATH . '/config.php');
+        $config = self::getConfig();
 
-        if (isset($config['productSync']['settings'])) {
-            return $config['productSync']['settings'];
+        if (isset($config['settings'])) {
+            return $config['settings'];
         }
 
         return [];
