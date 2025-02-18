@@ -3,10 +3,9 @@
 WP Product Sync allows for easy synchronization of product data between your WordPress site and Vendure
 
 ## Publish package
-
+  1. make sure release notes are updated
 `git tag <version number>` // including v and workflow will trigger a new release
 `git push --tags`
-
 
 ## Commands
 
