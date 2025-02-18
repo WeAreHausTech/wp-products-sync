@@ -15,9 +15,9 @@ class BaseSyncProducts
                 \WP_CLI::add_command('sync-products', \WeAreHausTech\WpProductSync\Commands\DeleteAllPosts::class);
                 \WP_CLI::add_command('sync-products', \WeAreHausTech\WpProductSync\Commands\RemoveLock::class);
             }
-        });
 
-        \WeAreHausTech\WpProductSync\Admin\AdminUI::init();
-        \WeAreHausTech\WpProductSync\Admin\OptionPage::init();
+            \WeAreHausTech\WpProductSync\Admin\AdminUI::init();
+            \WeAreHausTech\WpProductSync\Admin\OptionPage::init();
+        });
     }
 }
