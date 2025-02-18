@@ -4,7 +4,7 @@ namespace WeAreHausTech\WpProductSync\Admin;
 
 use WeAreHausTech\WpProductSync\Helpers\ConfigHelper;
 
-class AdminUI
+class AdminSettingsUI
 {
     private static $vendureColumns = [
 
