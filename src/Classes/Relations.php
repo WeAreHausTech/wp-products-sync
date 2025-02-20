@@ -11,7 +11,7 @@ class Relations
 {
     public $defaultLang = '';
     public $useWpml = false;
-    public $collectionTaxonomy = '';
+    public $collectionTaxonomys = [];
     public $syncCollections = false;
     public $syncFacets = false;
     public $updatedOrCreatedProductIds = [];
@@ -23,7 +23,7 @@ class Relations
         $configHelper = new ConfigHelper();
         $this->useWpml = $wpmlHelper->hasWpml();
         $this->defaultLang = $wpmlHelper->getDefaultLanguage();
-        $this->collectionTaxonomy = $configHelper->getCollectionTaxonomyType();
+        $this->collectionTaxonomys = $configHelper->getCollectionTaxonomyPostTypes();
         $this->syncFacets = $configHelper->hasFacets();
         $this->syncCollections = $configHelper->hasCollection();
         $this->updatedOrCreatedProductIds = $products->updatedOrCreatedProductIds;
@@ -106,28 +106,30 @@ class Relations
 
     public function assignCollectionValues($wpProduct, $collectionIds, $collections)
     {
-        $this->removeAllTermsOfType($wpProduct, $this->collectionTaxonomy);
-        $collectionsData = array();
-        foreach ($collectionIds as $collectionValueId) {
-            if (!isset($collections[$collectionValueId])) {
-                continue;
-            }
-
-            foreach ($wpProduct['ids'] as $lang => $wpProductId) {
-                if (!isset($collections[$collectionValueId]["ids"][$lang])) {
+        foreach ($this->collectionTaxonomys as $collectionTaxonomy) {
+            $this->removeAllTermsOfType($wpProduct, $collectionTaxonomy);
+            $collectionsData = array();
+            foreach ($collectionIds as $collectionValueId) {
+                if (!isset($collections[$collectionValueId])) {
                     continue;
                 }
 
-                $collectionsData[$wpProductId][] = (int) $collections[$collectionValueId]["ids"][$lang];
+                foreach ($wpProduct['ids'] as $lang => $wpProductId) {
+                    if (!isset($collections[$collectionValueId]["ids"][$lang])) {
+                        continue;
+                    }
+
+                    $collectionsData[$wpProductId][] = (int) $collections[$collectionValueId]["ids"][$lang];
+                }
             }
-        }
 
-        if (!isset($this->collectionTaxonomy)) {
-            return;
-        }
+            if (!isset($collectionTaxonomy)) {
+                return;
+            }
 
-        foreach ($collectionsData as $wpProductId => $collectionData) {
-            wp_set_object_terms($wpProductId, $collectionData, $this->collectionTaxonomy);
+            foreach ($collectionsData as $wpProductId => $collectionData) {
+                wp_set_object_terms($wpProductId, $collectionData, $collectionTaxonomy);
+            }
         }
     }
 
@@ -165,7 +167,7 @@ class Relations
                 $wpTermId = $facets[$facetValueId]["ids"][$lang];
                 $taxonomy = $facets[$facetValueId]["taxonomy"];
 
-                wp_set_object_terms($wpProductId, (int) $wpTermId, $taxonomy);
+              wp_set_object_terms($wpProductId, (int) $wpTermId, $taxonomy);
             }
         }
     }

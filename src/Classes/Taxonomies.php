@@ -36,7 +36,7 @@ class Taxonomies
 
         $vendureHelper = new VendureHelper();
         $facets = $vendureHelper->getfacets();
-        foreach ($taxonomies as $taxonomyType => $taxonomyInfo) {
+        foreach ($taxonomies as $taxonomyInfo) {
             // Delete taxonomies with no vendure id and taxonomies with no translation language
             $termsToDelete = $wpHelper->deleteTermsWithMissingValues($taxonomyInfo['wp']);
 
@@ -46,14 +46,15 @@ class Taxonomies
                 }
             }
 
-            if ($taxonomyType === 'collection') {
+            if ($taxonomyInfo['type'] === 'collection') {
                 $venudreDefaultRootCollection = "1";
                 $rootCollection = $taxonomyInfo['rootCollectionId'] ?? $venudreDefaultRootCollection;
                 $vendureValues = $vendureHelper->getCollectionsFromVendure($rootCollection);
                 $wpTerms = $wpHelper->getAllCollectionsFromWp($taxonomyInfo['wp']);
                 $this->syncAttributes($taxonomyInfo['wp'], $vendureValues, $wpTerms, $rootCollection);
-                continue;
-            } else {
+            }
+            
+            if ($taxonomyInfo['type'] === 'facet') {
                 $vendureValues = $facets[$taxonomyInfo['vendure']];
                 $wpTerms = $wpHelper->getAllTermsFromWp($taxonomyInfo['wp']);
                 $this->syncAttributes($taxonomyInfo['wp'], $vendureValues, $wpTerms);
@@ -124,7 +125,6 @@ class Taxonomies
         } else {
             return sanitize_title($vendureTerm['name']);
         }
-        return null;
     }
 
     public function updateTerm($wpTerm, $vendureTerm, $taxonomy)

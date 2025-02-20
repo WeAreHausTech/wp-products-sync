@@ -50,7 +50,7 @@ class ConfigHelper
         }
         if ($collections) {
             foreach ($collections as $taxonomy) {
-                $taxonomies['collection'] = [
+                $taxonomies[$taxonomy['vendure-taxonomy-collectionId']] = [
                     "wp" => $taxonomy['vendure-taxonomy-wp'],
                     "vendure" => null,
                     "type" => 'collection',
@@ -160,22 +160,6 @@ class ConfigHelper
             }
         }
         return false;
-    }
-
-    public function getCollectionTaxonomyType()
-    {
-        $taxonomies = $this->getTaxonomiesFromConfig();
-
-        if (!isset($taxonomies) || empty((array) $taxonomies)) {
-            return false;
-        }
-
-        foreach ($taxonomies as $taxonomy) {
-            if ($taxonomy['type'] === 'collection') {
-                return $taxonomy['wp'];
-            }
-        }
-        return '';
     }
 
     public function getCollectionTaxonomyPostTypes()

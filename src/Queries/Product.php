@@ -10,7 +10,7 @@ class Product extends BaseQuery
   {
 
     $config = ConfigHelper::getConfig();
-
+    
     $customFields = $config['products']['customFieldsQuery'] ?? '';
 
     $options = "(options: {
