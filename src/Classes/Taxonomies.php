@@ -194,7 +194,7 @@ class Taxonomies
             'name' => $name,
             'slug' => $slug,
 
-        ); 
+        );
 
         if (ConfigHelper::getSettingByKey('taxonomySyncDescription')) {
             $args['description'] = $description;
@@ -342,8 +342,9 @@ class Taxonomies
         $customFields = isset($value['customFields']) ? $this->getCustomFields($value['customFields']) : null;
         $termImage = isset($value['assets'][0]['source']) ? $value['assets'][0]['source'] : null;
         $position = isset($value['position']) ? $value['position'] : null;
+        $description = isset($value['description']) ? $value['description'] : '';
 
-        $term = $this->insertTerm($value['id'], $value['name'], $slug, $taxonomy, $vendureType, $value['updatedAt'], $customFields, $termImage, $position);
+        $term = $this->insertTerm($value['id'], $value['name'], $slug, $taxonomy, $vendureType, $value['updatedAt'], $customFields, $description, $termImage, $position);
 
         WpHelper::log(['Creating taxonomy', $taxonomy, $value['name'], $slug]);
 
@@ -390,11 +391,11 @@ class Taxonomies
         $args = array(
             'slug' => $slug,
         );
-        
+
         if (ConfigHelper::getSettingByKey('taxonomySyncDescription')) {
             $args['description'] = $description;
         }
-        
+
         $term = wp_insert_term($name, $taxonomy, $args);
 
 
