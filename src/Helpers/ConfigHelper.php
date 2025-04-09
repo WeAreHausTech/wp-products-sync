@@ -64,6 +64,7 @@ class ConfigHelper
             'settings' => [
                 'flushLinks' => (new self())->functionGetFieldValue('vendure-settings_vendure-settings-flushlinks'),
                 'softDelete' => (new self())->functionGetFieldValue('vendure-settings_vendure-settings-softDelete'),
+                'taxonomySyncDescription' => (new self())->functionGetFieldValue('vendure-settings_vendure-settings-taxonomySyncDescription'),
             ]
         ];
 

@@ -36,6 +36,7 @@ class VendureHelper
                 $products[$key]['translations'][$lang] = [
                     'name' => $value['name'],
                     'slug' => $value['slug'],
+                    'description' => $value['description'],
                 ];
             }
         }
