@@ -388,15 +388,14 @@ class Taxonomies
     public function insertTerm($vendureId, $name, $slug, $taxonomy, $vendureType, $updatedAt, $customFields = null, $description = '', $termImage = null, $position = null)
     {
         $args = array(
-            'name' => $name,
-            'taxonomy' => $taxonomy,
             'slug' => $slug,
         );
-
+        
         if (ConfigHelper::getSettingByKey('taxonomySyncDescription')) {
             $args['description'] = $description;
         }
-        $term = wp_insert_term($args);
+        
+        $term = wp_insert_term($name, $taxonomy, $args);
 
 
         if (is_wp_error($term)) {
