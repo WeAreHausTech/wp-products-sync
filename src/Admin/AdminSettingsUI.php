@@ -15,8 +15,24 @@ class AdminSettingsUI
     {
         add_action('admin_init', [__CLASS__, 'addAdminColumns']);
         add_action('admin_notices', [__CLASS__, 'showSoftDeletedNotice']);
+        add_action('admin_notices', [__CLASS__, 'showSlugMismatchNotice']);
         add_action('template_redirect', [__CLASS__, 'preventSoftDeletedTermAccess']);
 
+    }
+
+    private static function renderAdminNotice($noticeType = 'info', $title, $message, $content = '', $isDismissible = true)
+    {
+        $disMissible = $isDismissible ? 'is-dismissible' : '';
+
+        $html = <<<HTML
+        <div class="notice notice-{$noticeType} {$disMissible}">
+            <p style="font-weight: 700; font-size: 16px; margin-bottom: 10px;">{$title}</p>
+            <p>{$message}</p>
+            {$content}
+        </div>
+        HTML;
+
+        echo $html;
     }
 
     public static function showSoftDeletedNotice()
@@ -31,15 +47,44 @@ class AdminSettingsUI
         $softDeletedCount = self::getSoftDeletedCount($taxonomy);
 
         if ($softDeletedCount > 0) {
-            $message = <<<HTML
-            <div class="notice notice-error is-dismissible">
-                <p style="font-weight: 700;">Ecom components</p>
-                <p>There are currently <strong>{$softDeletedCount} deleted or inactivated terms</strong> in this taxonomy. These terms are hidden from the frontend but remain in the database for future reference.</p>
-            </div>
-            HTML;
-
-            echo $message;
+            $message = 'There are currently <strong>' . $softDeletedCount . ' deleted or inactivated terms</strong> in this taxonomy. These terms are hidden from the frontend but remain in the database for future reference';
+            self::renderAdminNotice('warning', 'Soft Deleted Terms Detected', $message, '', true);
         }
+    }
+
+    public static function showSlugMismatchNotice()
+    {
+        $mismatchedPosts = self::getMisMatchedSlugPosts();
+
+        if (!empty($mismatchedPosts)) {
+            $postLinks = array_map(function ($postId) {
+                $editLink = get_edit_post_link($postId);
+                $title = get_the_title($postId);
+                $vendureId = get_post_meta($postId, 'vendure_id', true);
+                return "<li><a href='{$editLink}' target='_blank'>{$title} (Vendure id: {$vendureId})</a></li>";
+            }, $mismatchedPosts);
+
+            $postList = '<ul style="margin-left: 20px;">' . implode('', $postLinks) . '</ul>';
+            $message = "Products detected where the slug does not match between WordPress and Vendure. This may cause issues with links or product visibility. Please check the following products:";
+            self::renderAdminNotice('error', 'Slug Mismatch Detected', $message, $postList, false);
+        }
+    }
+
+    private static function getMisMatchedSlugPosts()
+    {
+        $args = [
+            'post_type' => 'produkter',
+            'meta_query' => [
+                [
+                    'key' => 'vendure_slug_mismatch',
+                    'value' => '1',
+                    'compare' => '=',
+                ],
+            ],
+            'fields' => 'ids',
+        ];
+
+        return get_posts($args);
     }
 
     public static function preventSoftDeletedTermAccess()

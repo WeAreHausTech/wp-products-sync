@@ -77,6 +77,7 @@ class Products
             'meta_input' => $metaInput,
 
         ]);
+        $this->checkSlugMismatch($postId, $slug);
 
         WpHelper::log(['Creating product', $vendureId, $ProductName, $slug]);
         CacheHelper::clear($postId);
@@ -84,7 +85,26 @@ class Products
         return $postId;
     }
 
-    public function getCustomFields($customFields){
+    public function checkSlugMismatch($postId, $expectedSlug)
+    {
+        $currentSlug = get_post_field('post_name', $postId);
+
+        if ($currentSlug !== $expectedSlug) {
+            WpHelper::log([
+                'Slug mismatch',
+                'Vendure slug' => $expectedSlug,
+                'Created WP slug' => $currentSlug,
+                'Product ID' => $postId,
+            ]);
+
+            update_post_meta($postId, 'vendure_slug_mismatch', true);
+        } else {
+            delete_post_meta($postId, 'vendure_slug_mismatch');
+        }
+    }
+
+    public function getCustomFields($customFields)
+    {
 
         $data = [];
 
@@ -106,7 +126,7 @@ class Products
     public function createProduct($product)
     {
         $customFields = isset($product['customFields']) ? $product['customFields'] : null;
-        
+
         $orignal = $this->insertPost($product['name'], $product['description'], $product['slug'], $product['id'], $product['updatedAt'], $customFields);
 
         $this->updatedOrCreatedProductIds[] = $product['id'];
@@ -191,10 +211,12 @@ class Products
         wp_update_post([
             'ID' => $postId,
             'post_title' => $postTitle,
-            'post_name' => $postName, 
+            'post_name' => $postName,
             'post_content' => $postContent,
             'meta_input' => $metaInput
         ]);
+
+        $this->checkSlugMismatch($postId, $postName);
 
         WpHelper::log(['Updating product', $postTitle, $postName, $vendureId]);
         $this->updatedOrCreatedProductIds[] = $vendureId;
