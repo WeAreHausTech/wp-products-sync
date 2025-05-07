@@ -200,7 +200,18 @@ class Taxonomies
             $args['description'] = $description;
         }
 
-        wp_update_term($termID, $taxonomy, $args);
+        $updatedTerm = wp_update_term($termID, $taxonomy, $args);
+
+        if (is_wp_error($updatedTerm)) {
+            if ($updatedTerm->get_error_code() === 'duplicate_term_slug') {
+                $updatedTerm = $this->handleTermExistOnUpdateError($termID, $slug, $taxonomy, $args);
+            }
+
+            if (is_wp_error($updatedTerm)) {
+                WpHelper::log(['Error updating term with vendureid:', $termID, $updatedTerm->get_error_code()]);
+                return;
+            }
+        }
 
         $meta = array(
             'vendure_updated_at' => $updatedAt,
@@ -401,7 +412,7 @@ class Taxonomies
 
         if (is_wp_error($term)) {
             if ($term->get_error_code() === 'term_exists') {
-                $term = $this->handleTermExistError($term, $name, $slug, $taxonomy, $args);
+                $term = $this->handleTermExistOnInsertError($term, $name, $slug, $taxonomy, $args);
             }
 
             if (is_wp_error($term)) {
@@ -432,17 +443,40 @@ class Taxonomies
         return $term['term_id'];
     }
 
-    private function handleTermExistError($term, $name, $slug, $taxonomy, $args)
+    private function handleTermExistErrorRetry(callable $callback, $slug, $taxonomy, $args)
     {
-        // Append a unique suffix to the slug and try again
-        $suffix = 2;
-        do {
-            $args['slug'] = $slug . '-' . $suffix;
-            $term = wp_insert_term($name, $taxonomy, $args);
-            $suffix++;
-        } while (is_wp_error($term) && $term->get_error_code() === 'term_exists');
+        $retryErrorCodes = [
+            'term_exists',
+            'duplicate_term_slug'
+        ];
+        for ($suffix = 2; ; $suffix++) {
+            $args['slug'] = "{$slug}-{$suffix}";
+            $result = $callback($taxonomy, $args);
 
-        return $term;
+            if (!is_wp_error($result) || !in_array($result->get_error_code(), $retryErrorCodes, true)) {
+                return $result;
+            }
+        }
+    }
+
+    private function handleTermExistOnInsertError($term, $name, $slug, $taxonomy, $args)
+    {
+        return $this->handleTermExistErrorRetry(
+            fn($taxonomy, $args) => wp_insert_term($name, $taxonomy, $args),
+            $slug,
+            $taxonomy,
+            $args
+        );
+    }
+
+    private function handleTermExistOnUpdateError($termID, $slug, $taxonomy, $args)
+    {
+        return $this->handleTermExistErrorRetry(
+            fn($taxonomy, $args) => wp_update_term($termID, $taxonomy, $args),
+            $slug,
+            $taxonomy,
+            $args
+        );
     }
 
     public function handleSlugMismatch($termId, $expectedSlug)
