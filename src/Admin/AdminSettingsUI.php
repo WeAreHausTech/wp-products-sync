@@ -3,6 +3,7 @@
 namespace WeAreHausTech\WpProductSync\Admin;
 
 use WeAreHausTech\WpProductSync\Helpers\ConfigHelper;
+use WeAreHausTech\WpProductSync\Admin\Notices\SoftDeleted;
 
 class AdminSettingsUI
 {
@@ -14,13 +15,12 @@ class AdminSettingsUI
     public static function init(): void
     {
         add_action('admin_init', [__CLASS__, 'addAdminColumns']);
-        add_action('admin_notices', [__CLASS__, 'showSoftDeletedNotice']);
-        add_action('admin_notices', [__CLASS__, 'showSlugMismatchNotice']);
-        add_action('template_redirect', [__CLASS__, 'preventSoftDeletedTermAccess']);
-
+        add_action('admin_notices', ['WeAreHausTech\WpProductSync\Admin\Notices\SoftDeleted', 'showSoftDeletedNotice']);
+        add_action('admin_notices', ['WeAreHausTech\WpProductSync\Admin\Notices\SlugMismatch', 'showSlugMismatchNotice']);
+        add_action('template_redirect', ['WeAreHausTech\WpProductSync\Admin\Notices\SoftDeleted', 'preventSoftDeletedTermAccess']);
     }
 
-    private static function renderAdminNotice($noticeType = 'info', $title, $message, $content = '', $isDismissible = true)
+    public static function renderAdminNotice($noticeType = 'info', $title, $message, $content = '', $isDismissible = true)
     {
         $disMissible = $isDismissible ? 'is-dismissible' : '';
 
@@ -33,91 +33,6 @@ class AdminSettingsUI
         HTML;
 
         echo $html;
-    }
-
-    public static function showSoftDeletedNotice()
-    {
-        global $pagenow;
-
-        if ($pagenow !== 'edit-tags.php' || !isset($_GET['taxonomy'])) {
-            return;
-        }
-
-        $taxonomy = $_GET['taxonomy'];
-        $softDeletedCount = self::getSoftDeletedCount($taxonomy);
-
-        if ($softDeletedCount > 0) {
-            $message = 'There are currently <strong>' . $softDeletedCount . ' deleted or inactivated terms</strong> in this taxonomy. These terms are hidden from the frontend but remain in the database for future reference';
-            self::renderAdminNotice('warning', 'Soft Deleted Terms Detected', $message, '', true);
-        }
-    }
-
-    public static function showSlugMismatchNotice()
-    {
-        $mismatchedPosts = self::getMisMatchedSlugPosts();
-
-        if (!empty($mismatchedPosts)) {
-            $postLinks = array_map(function ($postId) {
-                $editLink = get_edit_post_link($postId);
-                $title = get_the_title($postId);
-                $vendureId = get_post_meta($postId, 'vendure_id', true);
-                return "<li><a href='{$editLink}' target='_blank'>{$title} (Vendure id: {$vendureId})</a></li>";
-            }, $mismatchedPosts);
-
-            $postList = '<ul style="margin-left: 20px;">' . implode('', $postLinks) . '</ul>';
-            $message = "Products detected where the slug does not match between WordPress and Vendure. This may cause issues with links or product visibility. Please check the following products:";
-            self::renderAdminNotice('error', 'Slug Mismatch Detected', $message, $postList, false);
-        }
-    }
-
-    private static function getMisMatchedSlugPosts()
-    {
-        $args = [
-            'post_type' => 'produkter',
-            'meta_query' => [
-                [
-                    'key' => 'vendure_slug_mismatch',
-                    'value' => '1',
-                    'compare' => '=',
-                ],
-            ],
-            'fields' => 'ids',
-        ];
-
-        return get_posts($args);
-    }
-
-    public static function preventSoftDeletedTermAccess()
-    {
-        if (is_tax()) {
-            $term = get_queried_object();
-
-            if ($term && !is_wp_error($term)) {
-                $isSoftDeleted = get_term_meta($term->term_id, 'vendure_soft_deleted', true);
-
-                if ($isSoftDeleted) {
-                    wp_redirect(home_url());
-                }
-            }
-        }
-    }
-
-    public static function getSoftDeletedCount($taxonomy)
-    {
-        $terms = get_terms([
-            'taxonomy' => $taxonomy,
-            'meta_query' => [
-                [
-                    'key' => 'vendure_soft_deleted',
-                    'value' => '1',
-                    'compare' => '=',
-                ],
-            ],
-            'fields' => 'ids',
-            'hide_empty' => false,
-        ]);
-
-        return is_array($terms) ? count($terms) : 0;
     }
 
     public static function addAdminColumns()
@@ -214,16 +129,11 @@ class AdminSettingsUI
 
         switch ($column_name) {
             case 'vendure_soft_deleted':
-                return self::getSoftDeletedTemplate($term_id);
+                return SoftDeleted::getSoftDeletedTemplate($term_id);
             default:
                 return get_term_meta($term_id, $column_name, true);
         }
     }
 
-    public static function getSoftDeletedTemplate($term_id)
-    {
-        $softDeleted = get_term_meta($term_id, 'vendure_soft_deleted', true);
 
-        return $softDeleted ? '<span style="color: red; font-weight: bold;">Deleted or Inactivated</span>' : 'Active';
-    }
 }
