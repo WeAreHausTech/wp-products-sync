@@ -14,7 +14,6 @@ class SlugMismatch
             return;
         }
 
-
         $postList = !empty($mismatchedPosts) ? '<span style="margin-left: 20px;">Products<span/><ul style="margin-left: 20px;">' . implode('', $mismatchedPosts) . '</ul>' : '';
         $termList = !empty($mismatchedTerms) ? '<span style="margin-left: 20px;">Taxonomies<span/><ul style="margin-left: 20px;">' . implode('', $mismatchedTerms) . '</ul>' : '';
 
