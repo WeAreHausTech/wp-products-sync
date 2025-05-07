@@ -52,10 +52,16 @@ class SlugMismatch
     {
         $args = [
             'meta_query' => [
+                'relation' => 'AND',
                 [
                     'key' => 'vendure_slug_mismatch',
                     'value' => '1',
                     'compare' => '=',
+                ],
+                [
+                    'key' => 'vendure_soft_deleted',
+                    'value' => '1',
+                    'compare' => '!=',
                 ],
             ],
             'fields' => 'ids',
