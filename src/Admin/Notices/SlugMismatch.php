@@ -7,8 +7,8 @@ class SlugMismatch
 {
     public static function showSlugMismatchNotice()
     {
-        $mismatchedPosts = self::getMisMatchedSlugPosts();
-        $mismatchedTerms = self::getMisMatchedSlugTerms();
+        $mismatchedPosts = self::getMismatchedSlugPosts();
+        $mismatchedTerms = self::getMismatchedSlugTerms();
 
         if (empty($mismatchedPosts) && empty($mismatchedTerms)) {
             return;
@@ -22,7 +22,7 @@ class SlugMismatch
         AdminSettingsUI::renderAdminNotice('error', 'Slug Mismatch Detected', $message, $allList, false);
     }
 
-    private static function getMisMatchedSlugPosts()
+    private static function getMismatchedSlugPosts()
     {
         $args = [
             'post_type' => 'produkter',
@@ -50,7 +50,7 @@ class SlugMismatch
         }, $mismatchedPosts);
     }
 
-    private static function getMisMatchedSlugTerms()
+    private static function getMismatchedSlugTerms()
     {
         $args = [
             'meta_query' => [
