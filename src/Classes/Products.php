@@ -65,7 +65,7 @@ class Products
             'vendure_updated_at' => $updatedAt,
         ];
 
-        $customFields =  $this->getCustomFields($customFields);
+        $customFields = $this->getCustomFields($customFields);
         $metaInput = array_merge($metaInput, $customFields);
 
         $postId = wp_insert_post([
@@ -77,7 +77,7 @@ class Products
             'meta_input' => $metaInput,
 
         ]);
-        $this->checkSlugMismatch($postId, $slug);
+        $this->handleSlugMismatch($postId, $slug);
 
         WpHelper::log(['Creating product', $vendureId, $ProductName, $slug]);
         CacheHelper::clear($postId);
@@ -85,22 +85,23 @@ class Products
         return $postId;
     }
 
-    public function checkSlugMismatch($postId, $expectedSlug)
+    public function handleSlugMismatch($postId, $expectedSlug)
     {
         $currentSlug = get_post_field('post_name', $postId);
 
-        if ($currentSlug !== $expectedSlug) {
-            WpHelper::log([
-                'Slug mismatch',
-                'Vendure slug' => $expectedSlug,
-                'Created WP slug' => $currentSlug,
-                'Product ID' => $postId,
-            ]);
-
-            update_post_meta($postId, 'vendure_slug_mismatch', true);
-        } else {
+        if ($currentSlug === $expectedSlug) {
             delete_post_meta($postId, 'vendure_slug_mismatch');
+            return;
         }
+
+        WpHelper::log([
+            'Slug mismatch Product',
+            'Vendure slug' => $expectedSlug,
+            'Created WP slug' => $currentSlug,
+            'Product ID' => $postId,
+        ]);
+
+        update_post_meta($postId, 'vendure_slug_mismatch', true);
     }
 
     public function getCustomFields($customFields)
@@ -216,7 +217,7 @@ class Products
             'meta_input' => $metaInput
         ]);
 
-        $this->checkSlugMismatch($postId, $postName);
+        $this->handleSlugMismatch($postId, $postName);
 
         WpHelper::log(['Updating product', $postTitle, $postName, $vendureId]);
         $this->updatedOrCreatedProductIds[] = $vendureId;
