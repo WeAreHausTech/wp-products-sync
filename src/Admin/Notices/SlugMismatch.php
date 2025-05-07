@@ -10,14 +10,17 @@ class SlugMismatch
         $mismatchedPosts = self::getMisMatchedSlugPosts();
         $mismatchedTerms = self::getMisMatchedSlugTerms();
 
-        if (!empty($mismatchedPosts) || !empty($mismatchedTerms)) {
-            $postList = !empty($mismatchedPosts) ? '<span style="margin-left: 20px;">Products<span/><ul style="margin-left: 20px;">' . implode('', $mismatchedPosts) . '</ul>' : '';
-            $termList = !empty($mismatchedTerms) ? '<span style="margin-left: 20px;">Taxonomies<span/><ul style="margin-left: 20px;">' . implode('', $mismatchedTerms) . '</ul>' : '';
-
-            $allList = $postList . $termList;
-            $message = "Products/taxonomies detected where the slug does not match between WordPress and Vendure. This may cause issues with links or product visibility. Please check the following items:";
-            AdminSettingsUI::renderAdminNotice('error', 'Slug Mismatch Detected', $message, $allList, false);
+        if (empty($mismatchedPosts) && empty($mismatchedTerms)) {
+            return;
         }
+
+
+        $postList = !empty($mismatchedPosts) ? '<span style="margin-left: 20px;">Products<span/><ul style="margin-left: 20px;">' . implode('', $mismatchedPosts) . '</ul>' : '';
+        $termList = !empty($mismatchedTerms) ? '<span style="margin-left: 20px;">Taxonomies<span/><ul style="margin-left: 20px;">' . implode('', $mismatchedTerms) . '</ul>' : '';
+
+        $allList = $postList . $termList;
+        $message = "Products/taxonomies detected where the slug does not match between WordPress and Vendure. This may cause issues with links or product visibility. Please check the following items:";
+        AdminSettingsUI::renderAdminNotice('error', 'Slug Mismatch Detected', $message, $allList, false);
     }
 
     private static function getMisMatchedSlugPosts()
