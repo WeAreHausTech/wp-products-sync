@@ -200,7 +200,18 @@ class Taxonomies
             $args['description'] = $description;
         }
 
-        wp_update_term($termID, $taxonomy, $args);
+        $updatedTerm = wp_update_term($termID, $taxonomy, $args);
+
+        if (is_wp_error($updatedTerm)) {
+            if ($updatedTerm->get_error_code() === 'duplicate_term_slug') {
+                $updatedTerm = $this->handleTermExistOnUpdateError($termID, $slug, $taxonomy, $args);
+            }
+
+            if (is_wp_error($updatedTerm)) {
+                WpHelper::log(['Error updating term with vendureid:', $termID, $updatedTerm->get_error_code()]);
+                return;
+            }
+        }
 
         $meta = array(
             'vendure_updated_at' => $updatedAt,
@@ -219,6 +230,8 @@ class Taxonomies
         if ($position !== null) {
             update_term_meta($termID, 'vendure_term_position', $position);
         }
+
+        $this->handleSlugMismatch($termID, $slug);
 
         WpHelper::log(['Updating taxonomy', $taxonomy, $name, $slug]);
 
@@ -388,9 +401,7 @@ class Taxonomies
 
     public function insertTerm($vendureId, $name, $slug, $taxonomy, $vendureType, $updatedAt, $customFields = null, $description = '', $termImage = null, $position = null)
     {
-        $args = array(
-            'slug' => $slug,
-        );
+        $args = ['slug' => $slug];
 
         if (ConfigHelper::getSettingByKey('taxonomySyncDescription')) {
             $args['description'] = $description;
@@ -400,9 +411,14 @@ class Taxonomies
 
 
         if (is_wp_error($term)) {
-            //TODO log error somewhere
-            error_log($term->get_error_message());
-            return;
+            if ($term->get_error_code() === 'term_exists') {
+                $term = $this->handleTermExistOnInsertError($term, $name, $slug, $taxonomy, $args);
+            }
+
+            if (is_wp_error($term)) {
+                WpHelper::log(['Error creating term with vendureid:', $vendureId, $term->get_error_code()]);
+                return;
+            }
         }
 
         add_term_meta($term['term_id'], $vendureType, $vendureId, true);
@@ -422,7 +438,64 @@ class Taxonomies
             }
         }
 
+        $this->handleSlugMismatch($term['term_id'], $slug);
+
         return $term['term_id'];
+    }
+
+    private function handleTermExistErrorRetry(callable $callback, $slug, $taxonomy, $args)
+    {
+        $retryErrorCodes = [
+            'term_exists',
+            'duplicate_term_slug'
+        ];
+        for ($suffix = 2; ; $suffix++) {
+            $args['slug'] = "{$slug}-{$suffix}";
+            $result = $callback($taxonomy, $args);
+
+            if (!is_wp_error($result) || !in_array($result->get_error_code(), $retryErrorCodes, true)) {
+                return $result;
+            }
+        }
+    }
+
+    private function handleTermExistOnInsertError($term, $name, $slug, $taxonomy, $args)
+    {
+        return $this->handleTermExistErrorRetry(
+            fn($taxonomy, $args) => wp_insert_term($name, $taxonomy, $args),
+            $slug,
+            $taxonomy,
+            $args
+        );
+    }
+
+    private function handleTermExistOnUpdateError($termID, $slug, $taxonomy, $args)
+    {
+        return $this->handleTermExistErrorRetry(
+            fn($taxonomy, $args) => wp_update_term($termID, $taxonomy, $args),
+            $slug,
+            $taxonomy,
+            $args
+        );
+    }
+
+    public function handleSlugMismatch($termId, $expectedSlug)
+    {
+        $currentSlug = get_term_field('slug', $termId);
+
+        if ($currentSlug === $expectedSlug) {
+            delete_term_meta($termId, 'vendure_slug_mismatch');
+            return;
+        }
+
+        WpHelper::log([
+            'Slug mismatch taxonomy',
+            'Vendure slug' => $expectedSlug,
+            'Created WP slug' => $currentSlug,
+            'Term ID' => $termId,
+        ]);
+
+        update_term_meta($termId, 'vendure_slug_mismatch', true);
     }
 
     public function getTermIdByVendureId($vendureId)

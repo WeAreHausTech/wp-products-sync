@@ -3,6 +3,7 @@
 namespace WeAreHausTech\WpProductSync\Admin;
 
 use WeAreHausTech\WpProductSync\Helpers\ConfigHelper;
+use WeAreHausTech\WpProductSync\Admin\Notices\SoftDeleted;
 
 class AdminSettingsUI
 {
@@ -14,65 +15,24 @@ class AdminSettingsUI
     public static function init(): void
     {
         add_action('admin_init', [__CLASS__, 'addAdminColumns']);
-        add_action('admin_notices', [__CLASS__, 'showSoftDeletedNotice']);
-        add_action('template_redirect', [__CLASS__, 'preventSoftDeletedTermAccess']);
-
+        add_action('admin_notices', ['WeAreHausTech\WpProductSync\Admin\Notices\SoftDeleted', 'showSoftDeletedNotice']);
+        add_action('admin_notices', ['WeAreHausTech\WpProductSync\Admin\Notices\SlugMismatch', 'showSlugMismatchNotice']);
+        add_action('template_redirect', ['WeAreHausTech\WpProductSync\Admin\Notices\SoftDeleted', 'preventSoftDeletedTermAccess']);
     }
 
-    public static function showSoftDeletedNotice()
+    public static function renderAdminNotice($noticeType = 'info', $title, $message, $content = '', $isDismissible = true)
     {
-        global $pagenow;
+        $disMissible = $isDismissible ? 'is-dismissible' : '';
 
-        if ($pagenow !== 'edit-tags.php' || !isset($_GET['taxonomy'])) {
-            return;
-        }
+        $html = <<<HTML
+        <div class="notice notice-{$noticeType} {$disMissible}">
+            <p style="font-weight: 700; font-size: 16px; margin-bottom: 10px;">{$title}</p>
+            <p>{$message}</p>
+            {$content}
+        </div>
+        HTML;
 
-        $taxonomy = $_GET['taxonomy'];
-        $softDeletedCount = self::getSoftDeletedCount($taxonomy);
-
-        if ($softDeletedCount > 0) {
-            $message = <<<HTML
-            <div class="notice notice-error is-dismissible">
-                <p style="font-weight: 700;">Ecom components</p>
-                <p>There are currently <strong>{$softDeletedCount} deleted or inactivated terms</strong> in this taxonomy. These terms are hidden from the frontend but remain in the database for future reference.</p>
-            </div>
-            HTML;
-
-            echo $message;
-        }
-    }
-
-    public static function preventSoftDeletedTermAccess()
-    {
-        if (is_tax()) {
-            $term = get_queried_object();
-
-            if ($term && !is_wp_error($term)) {
-                $isSoftDeleted = get_term_meta($term->term_id, 'vendure_soft_deleted', true);
-
-                if ($isSoftDeleted) {
-                    wp_redirect(home_url());
-                }
-            }
-        }
-    }
-
-    public static function getSoftDeletedCount($taxonomy)
-    {
-        $terms = get_terms([
-            'taxonomy' => $taxonomy,
-            'meta_query' => [
-                [
-                    'key' => 'vendure_soft_deleted',
-                    'value' => '1',
-                    'compare' => '=',
-                ],
-            ],
-            'fields' => 'ids',
-            'hide_empty' => false,
-        ]);
-
-        return is_array($terms) ? count($terms) : 0;
+        echo $html;
     }
 
     public static function addAdminColumns()
@@ -169,16 +129,11 @@ class AdminSettingsUI
 
         switch ($column_name) {
             case 'vendure_soft_deleted':
-                return self::getSoftDeletedTemplate($term_id);
+                return SoftDeleted::getSoftDeletedTemplate($term_id);
             default:
                 return get_term_meta($term_id, $column_name, true);
         }
     }
 
-    public static function getSoftDeletedTemplate($term_id)
-    {
-        $softDeleted = get_term_meta($term_id, 'vendure_soft_deleted', true);
 
-        return $softDeleted ? '<span style="color: red; font-weight: bold;">Deleted or Inactivated</span>' : 'Active';
-    }
 }
