@@ -1,3 +1,7 @@
+## Release 2.0.8
+
+- Fix: Improve slug mismatch notice to display the total number of mismatched posts and show 50 products at a time instead of 5.
+
 ## Release 2.0.7
 
 - Feat: Add meta field to track slug differences between Vendure and WordPress.
