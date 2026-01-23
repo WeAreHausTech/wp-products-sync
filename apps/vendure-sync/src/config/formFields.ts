@@ -24,7 +24,8 @@ export interface TaxonomyField extends FormField {
 export const taxonomyFields: TaxonomyField[] = [
   {
     key: 'vendureTaxonomyType',
-    label: 'Vendure Data Type',
+    label: 'Data Type',
+    description: 'Sync collections or facets from Vendure.',
     type: 'select',
     required: true,
     options: [
@@ -34,17 +35,17 @@ export const taxonomyFields: TaxonomyField[] = [
   },
   {
     key: 'vendureTaxonomyWp',
-    label: 'Taxonomy in WordPress',
+    label: 'WordPress Taxonomy Name',
     type: 'text',
-    placeholder: 'Enter the WordPress taxonomy name',
+    placeholder: 'e.g., product-category',
     required: true,
   },
   {
     key: 'vendureTaxonomyCollectionId',
-    label: 'Root Collection ID',
-    description: 'Specify the top-level Vendure collection ID whose child collections should be synced',
+    label: 'Collection ID',
+    description: 'Main collection ID from Vendure. All sub-collections will sync.',
     type: 'text',
-    placeholder: 'Enter collection ID',
+    placeholder: 'e.g., 1, 2, 3',
     required: true,
     conditional: {
       field: 'vendureTaxonomyType',
@@ -53,10 +54,10 @@ export const taxonomyFields: TaxonomyField[] = [
   },
   {
     key: 'vendureTaxonomyFacetCode',
-    label: 'Facet Code in Vendure',
-    description: 'Enter the Facet Code from Vendure',
+    label: 'Facet Code',
+    description: 'The facet code from Vendure (e.g., size, color, material).',
     type: 'text',
-    placeholder: 'Enter facet code',
+    placeholder: 'e.g., size, color',
     required: true,
     conditional: {
       field: 'vendureTaxonomyType',
@@ -68,22 +69,20 @@ export const taxonomyFields: TaxonomyField[] = [
 export const settingsFields: FormField[] = [
   {
     key: 'flushLinks',
-    label: 'Flush Links on update',
-    description:
-      'Enable this option to flush WordPress rewrite rules whenever a term or product is updated during the sync. This is necessary if you are using custom rewrite rules for taxonomies or products to ensure the URL structure remains correct.',
+    label: 'Update URLs when syncing',
+    description: 'Refresh permalinks after syncing. Enable if you have custom URL structures.',
     type: 'switch',
   },
   {
     key: 'softDelete',
-    label: 'Enable Soft Delete for Terms',
-    description:
-      'When enabled, terms will not be deleted during the sync. Instead, they will be marked as "soft deleted," and their pages will no longer be accessible.',
+    label: 'Keep deleted items in WordPress',
+    description: 'Hide removed items instead of deleting them. Useful for keeping historical data.',
     type: 'switch',
   },
   {
     key: 'taxonomySyncDescription',
-    label: 'Sync description for taxonomies',
-    description: 'When enabled, taxonomy descriptions will be synced from Vendure to WordPress.',
+    label: 'Sync descriptions',
+    description: 'Sync descriptions from Vendure collections to WordPress.',
     type: 'switch',
   },
 ]

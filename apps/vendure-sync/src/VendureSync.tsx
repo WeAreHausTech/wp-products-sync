@@ -135,12 +135,9 @@ export default function VendureSync() {
   }
 
   return (
-    <Flex direction="column" gap="6" className="vendure-sync-container">
+    <Flex direction="column" gap="6" className="vendure-sync-container" width="100%">
       <Flex direction="column" gap="2">
-        <Heading size="8">Vendure Sync Settings</Heading>
-        <Text size="3" color="gray">
-          Configure how Vendure data (collections or facets) should be mapped to WordPress taxonomies.
-        </Text>
+        <Heading size="8">Vendure Product Sync Settings</Heading>
       </Flex>
 
       <Flex direction="column" gap="6">
@@ -148,16 +145,16 @@ export default function VendureSync() {
         <Card>
           <Flex direction="column" gap="5">
             <Flex direction="column" gap="2">
-              <Heading size="5">Mappings for Taxonomies</Heading>
+              <Heading size="5">Taxonomy Mappings</Heading>
               <Text size="2" color="gray">
-                Configure how Vendure data (collections or facets) should be mapped to WordPress taxonomies.
+                Connect Vendure collections and facets to WordPress taxonomies.
               </Text>
             </Flex>
             <Separator />
 
             {taxonomies.length === 0 ? (
               <Text size="2" color="gray">
-                No taxonomy mappings configured. Click "Add Mapping" to get started.
+                No mappings configured. Click "Add Mapping" to get started.
               </Text>
             ) : (
               <Flex direction="column" gap="4">
@@ -171,7 +168,7 @@ export default function VendureSync() {
                     }}>
                       <Flex align="center" justify="between">
                         <Text size="2" weight="medium">
-                          Mapping {index + 1}
+                          Mapping #{index + 1}
                         </Text>
                         <Button
                           size="1"
