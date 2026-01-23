@@ -25,47 +25,70 @@ class ConfigHelper
             return self::$cachedConfig;
         }
 
-        if (!class_exists('ACF')) {
-            return [];
-
-        }
-
         $configFilePath = WP_PRODUCTS_SYNC_PLUGIN_DIR . '/config.php';
         $customFieldsConfig = file_exists($configFilePath) ? require $configFilePath : [];
 
-        $facets = get_field('vendure-taxonomies-facet', 'option');
-        $collections = get_field('vendure-taxonomies-collection', 'option');
+        $option_name = 'wp_products_sync_settings';
+        $settings_json = get_option($option_name, '');
 
         $taxonomies = [];
+        $settings = [
+            'flushLinks'              => false,
+            'softDelete'              => false,
+            'taxonomySyncDescription' => false,
+        ];
 
-        if ($facets) {
-            foreach ($facets as $taxonomy) {
-                $taxonomies[$taxonomy['vendure-taxonomy-facetCode']] = [
-                    "wp" => $taxonomy['vendure-taxonomy-wp'],
-                    "vendure" => $taxonomy['vendure-taxonomy-facetCode'] ?? null,
-                    "type" => 'facet',
-                    "rootCollectionId" => null
-                ];
-            }
-        }
-        if ($collections) {
-            foreach ($collections as $taxonomy) {
-                $taxonomies[$taxonomy['vendure-taxonomy-collectionId']] = [
-                    "wp" => $taxonomy['vendure-taxonomy-wp'],
-                    "vendure" => null,
-                    "type" => 'collection',
-                    "rootCollectionId" => $taxonomy['vendure-taxonomy-collectionId'] ?? null
-                ];
+        if (!empty($settings_json)) {
+            $decoded = json_decode($settings_json, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                // Process taxonomies from the new format
+                if (isset($decoded['taxonomies']) && is_array($decoded['taxonomies'])) {
+                    foreach ($decoded['taxonomies'] as $taxonomy) {
+                        $type = $taxonomy['vendureTaxonomyType'] ?? null;
+                        $wp_taxonomy = $taxonomy['vendureTaxonomyWp'] ?? '';
+
+                        if (!$type || !$wp_taxonomy) {
+                            continue;
+                        }
+
+                        if ($type === 'facet') {
+                            $facet_code = $taxonomy['vendureTaxonomyFacetCode'] ?? '';
+                            if ($facet_code) {
+                                $taxonomies[$facet_code] = [
+                                    'wp'              => $wp_taxonomy,
+                                    'vendure'         => $facet_code,
+                                    'type'            => 'facet',
+                                    'rootCollectionId' => null,
+                                ];
+                            }
+                        } elseif ($type === 'collection') {
+                            $collection_id = $taxonomy['vendureTaxonomyCollectionId'] ?? '';
+                            if ($collection_id) {
+                                $taxonomies[$collection_id] = [
+                                    'wp'              => $wp_taxonomy,
+                                    'vendure'         => null,
+                                    'type'            => 'collection',
+                                    'rootCollectionId' => $collection_id,
+                                ];
+                            }
+                        }
+                    }
+                }
+
+                // Process settings
+                if (isset($decoded['settings']) && is_array($decoded['settings'])) {
+                    $settings = [
+                        'flushLinks'              => isset($decoded['settings']['flushLinks']) ? (bool) $decoded['settings']['flushLinks'] : false,
+                        'softDelete'              => isset($decoded['settings']['softDelete']) ? (bool) $decoded['settings']['softDelete'] : false,
+                        'taxonomySyncDescription' => isset($decoded['settings']['taxonomySyncDescription']) ? (bool) $decoded['settings']['taxonomySyncDescription'] : false,
+                    ];
+                }
             }
         }
 
         $baseConfig = [
-            "taxonomies" => $taxonomies,
-            'settings' => [
-                'flushLinks' => (new self())->functionGetFieldValue('vendure-settings_vendure-settings-flushlinks'),
-                'softDelete' => (new self())->functionGetFieldValue('vendure-settings_vendure-settings-softDelete'),
-                'taxonomySyncDescription' => (new self())->functionGetFieldValue('vendure-settings_vendure-settings-taxonomySyncDescription'),
-            ]
+            'taxonomies' => $taxonomies,
+            'settings'   => $settings,
         ];
 
         $config = array_merge_recursive($baseConfig, $customFieldsConfig);
@@ -74,11 +97,6 @@ class ConfigHelper
         return $config;
     }
 
-    public function functionGetFieldValue($field)
-    {
-        $value = get_field($field, 'option') ?? false;
-        return $value === "1" || $value === true;
-    }
 
     public function getTaxonomiesFromConfig()
     {

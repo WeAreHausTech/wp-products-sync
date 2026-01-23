@@ -27,6 +27,6 @@
   }
 }
 
-body.toplevel_page_vendure-sync {
+body.toplevel_page_vendure-sync, body.haus-storefront_page_vendure-sync {
   height: auto;
 }

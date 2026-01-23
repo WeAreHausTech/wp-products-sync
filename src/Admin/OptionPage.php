@@ -169,6 +169,19 @@ class OptionPage
                 padding: 20px;
             }
         ');
+
+        // Inject API configuration
+        $api_url = rest_url('wp-products-sync/v1/vendure-sync-settings');
+        $nonce   = wp_create_nonce('wp_rest');
+        wp_add_inline_script(
+            'vendure-sync',
+            sprintf(
+                'window.vendureSync = { apiUrl: %s, nonce: %s };',
+                wp_json_encode($api_url),
+                wp_json_encode($nonce)
+            ),
+            'before'
+        );
     }
 
     /**

@@ -1,11 +1,14 @@
 import './App.css'
 import VendureSync from './VendureSync'
+import { ToastProvider } from './contexts/ToastContext'
 
 function App() {
   return (
-    <div className="vendure-sync-app">
-      <VendureSync />
-    </div>
+    <ToastProvider>
+      <div className="vendure-sync-app">
+        <VendureSync />
+      </div>
+    </ToastProvider>
   )
 }
 
