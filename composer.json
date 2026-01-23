@@ -1,6 +1,8 @@
 {
   "name": "wearehaustech/wp-products-sync",
-  "description": "Wordpress products sync",
+  "description": "WordPress plugin for syncing products with Vendure",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
   "autoload": {
     "psr-4": {
       "WeAreHausTech\\WpProductSync\\": "src/"
@@ -13,5 +15,11 @@
       "homepage": "https://haus.se"
     }
   ],
-  "require": {}
+  "require": {
+    "php": ">=7.4"
+  },
+  "require-dev": {},
+  "config": {
+    "optimize-autoloader": true
+  }
 }

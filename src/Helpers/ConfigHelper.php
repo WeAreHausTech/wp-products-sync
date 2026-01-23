@@ -30,7 +30,7 @@ class ConfigHelper
 
         }
 
-        $configFilePath = HAUS_ECOM_PLUGIN_PATH . '/config.php';
+        $configFilePath = WP_PRODUCTS_SYNC_PLUGIN_DIR . '/config.php';
         $customFieldsConfig = file_exists($configFilePath) ? require $configFilePath : [];
 
         $facets = get_field('vendure-taxonomies-facet', 'option');
