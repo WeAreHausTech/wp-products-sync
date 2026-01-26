@@ -147,7 +147,7 @@ export default function VendureSync() {
             <Flex direction="column" gap="2">
               <Heading size="5">Taxonomy Mappings</Heading>
               <Text size="2" color="gray">
-                Connect Vendure collections and facets to WordPress taxonomies.
+                Map Vendure collections or facets to WordPress taxonomies. Each mapping creates/updates terms during synchronization.
               </Text>
             </Flex>
             <Separator />
@@ -256,7 +256,7 @@ export default function VendureSync() {
         {/* Settings Section */}
         <Card>
           <Flex direction="column" gap="5">
-            <Heading size="5">Settings</Heading>
+            <Heading size="5">Synchronization options</Heading>
             <Separator />
             <Flex direction="column" gap="4">
               {settingsFields.map((field) => {
@@ -296,7 +296,7 @@ export default function VendureSync() {
           disabled={saveMutation.isPending}
           style={{ minWidth: '120px' }}
         >
-          {saveMutation.isPending ? 'Saving...' : 'Save Settings'}
+          {saveMutation.isPending ? 'Saving...' : 'Save changes'}
         </Button>
       </Flex>
     </Flex >
