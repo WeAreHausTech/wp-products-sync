@@ -73,7 +73,7 @@ export const settingsFields: FormField[] = [
     key: "flushLinks",
     label: "Flush permalinks after sync",
     description:
-      "Refreshes permalinks only for products and taxonomies updated during sync. Enable if you have custom URL structures.",
+      "Flushes permalinks only for products and taxonomies updated during sync. Enable if you have custom URL structures.",
     type: "switch",
   },
   {
