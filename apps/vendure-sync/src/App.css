@@ -1,5 +1,3 @@
-
-
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -22,11 +20,12 @@
   justify-content: flex-start;
   padding: 2rem;
 
-  .haus-storefront-container { 
+  .haus-storefront-container {
     width: 100%;
   }
 }
 
-body.toplevel_page_vendure-sync, body.haus-storefront_page_vendure-sync {
+body.toplevel_page_vendure-sync,
+body.haus-storefront_page_vendure-sync {
   height: auto;
 }

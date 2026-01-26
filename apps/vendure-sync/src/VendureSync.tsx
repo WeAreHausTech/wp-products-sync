@@ -137,7 +137,10 @@ export default function VendureSync() {
   return (
     <Flex direction="column" gap="6" className="vendure-sync-container" width="100%">
       <Flex direction="column" gap="2">
-        <Heading size="8">Vendure Product Sync Settings</Heading>
+        <Heading size="6">Product Sync Settings</Heading>
+        <Text size="3" color="gray">
+          Configure the synchronization of your Vendure products to WordPress.
+        </Text>
       </Flex>
 
       <Flex direction="column" gap="6">

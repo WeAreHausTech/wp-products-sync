@@ -164,15 +164,11 @@ class OptionPage
 
         wp_register_style('vendure-sync-inline-style', false);
         wp_enqueue_style('vendure-sync-inline-style');
-        wp_add_inline_style('vendure-sync-inline-style', '
-            #vendure-sync-root {
-                padding: 20px;
-            }
-        ');
+
 
         // Inject API configuration
         $api_url = rest_url('wp-products-sync/v1/vendure-sync-settings');
-        $nonce   = wp_create_nonce('wp_rest');
+        $nonce = wp_create_nonce('wp_rest');
         wp_add_inline_script(
             'vendure-sync',
             sprintf(
@@ -190,9 +186,12 @@ class OptionPage
     public static function renderPage(): void
     {
         ?>
-        <div id="vendure-sync-root">
-            <div class="vendure-sync-loading-message" style="text-align:center; padding:2em;">
-                <span>Loading Vendure Sync Settings...</span>
+        <div id="haus-storefront-container" style="padding: 20px;">
+            <div id="haus-storefront-navigation"></div>
+            <div id="vendure-sync-root">
+                <div class="vendure-sync-loading-message" style="text-align:center;">
+                    <span>Loading Vendure Sync Settings...</span>
+                </div>
             </div>
         </div>
         <?php
@@ -209,16 +208,16 @@ class OptionPage
                 // Add as submenu under Haus Storefront
                 add_submenu_page(
                     'haus-storefront',
-                    __('Sync Settings', 'wp-products-sync'),
-                    __('Sync Settings', 'wp-products-sync'),
+                    __('Product Sync', 'wp-products-sync'),
+                    __('Product Sync', 'wp-products-sync'),
                     'manage_options',
                     'vendure-sync',
                     [__CLASS__, 'renderPage']
                 );
             } else {
                 add_menu_page(
-                    __('Sync Settings', 'wp-products-sync'),
-                    __('Sync Settings', 'wp-products-sync'),
+                    __('Product Sync', 'wp-products-sync'),
+                    __('Product Sync', 'wp-products-sync'),
                     'manage_options',
                     'vendure-sync',
                     [__CLASS__, 'renderPage']
