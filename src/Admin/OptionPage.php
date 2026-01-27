@@ -208,16 +208,16 @@ class OptionPage
                 // Add as submenu under Haus Storefront
                 add_submenu_page(
                     'haus-storefront',
-                    __('Product Sync', 'wp-products-sync'),
-                    __('Product Sync', 'wp-products-sync'),
+                    __('Sync Settings', 'wp-products-sync'),
+                    __('Sync Settings', 'wp-products-sync'),
                     'manage_options',
                     'vendure-sync',
                     [__CLASS__, 'renderPage']
                 );
             } else {
                 add_menu_page(
-                    __('Product Sync', 'wp-products-sync'),
-                    __('Product Sync', 'wp-products-sync'),
+                    __('Sync Settings', 'wp-products-sync'),
+                    __('Sync Settings', 'wp-products-sync'),
                     'manage_options',
                     'vendure-sync',
                     [__CLASS__, 'renderPage']
