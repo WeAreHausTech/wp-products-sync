@@ -106,8 +106,11 @@ class RestApi
             );
         }
 
+        // Sanitize settings using config-based sanitization
+        $sanitized_settings = self::sanitizeSettings($settings);
+
         $option_name = 'wp_products_sync_settings';
-        $json_string = wp_json_encode($settings);
+        $json_string = wp_json_encode($sanitized_settings);
 
         if ($json_string === false) {
             return new \WP_Error(
@@ -156,5 +159,96 @@ class RestApi
             ],
             200
         );
+    }
+
+    /**
+     * Validation and sanitization configuration
+     * @return array Field validation config
+     */
+    private static function getValidationConfig(): array
+    {
+        $vendureTaxonomyTypes = [
+            'collection',
+            'facet',
+        ];
+
+        return [
+            'taxonomies' => [
+                'vendureTaxonomyWp' => 'sanitize_key',
+                'vendureTaxonomyType' => function ($value) use ($vendureTaxonomyTypes) {
+                    $value = sanitize_text_field($value);
+                    return in_array($value, $vendureTaxonomyTypes, true);
+                },
+                'vendureTaxonomyCollectionId' => 'sanitize_text_field',
+                'vendureTaxonomyFacetCode' => 'sanitize_key',
+            ],
+            'settings' => [
+                'flushLinks' => 'sanitize_boolean',
+                'softDelete' => 'sanitize_boolean',
+                'taxonomySyncDescription' => 'sanitize_boolean',
+            ],
+        ];
+    }
+
+    /**
+     * Sanitize settings using validation config
+     *
+     * @param array $settings Raw settings data
+     * @return array Sanitized settings
+     */
+    private static function sanitizeSettings(array $settings): array
+    {
+        $config = self::getValidationConfig();
+
+        // Sanitize taxonomies
+        if (isset($settings['taxonomies']) && is_array($settings['taxonomies'])) {
+            foreach ($settings['taxonomies'] as $key => $taxonomy) {
+                if (!is_array($taxonomy)) {
+                    unset($settings['taxonomies'][$key]);
+                    continue;
+                }
+                foreach ($config['taxonomies'] as $field => $sanitizer) {
+                    if (isset($taxonomy[$field])) {
+                        $settings['taxonomies'][$key][$field] = self::applySanitizer($taxonomy[$field], $sanitizer);
+                    }
+                }
+            }
+        }
+
+        // Sanitize settings
+        if (isset($settings['settings']) && is_array($settings['settings'])) {
+            foreach ($config['settings'] as $field => $sanitizer) {
+                if (isset($settings['settings'][$field])) {
+                    $settings['settings'][$field] = self::applySanitizer($settings['settings'][$field], $sanitizer);
+                }
+            }
+        }
+
+        return $settings;
+    }
+
+    /**
+     * Apply sanitizer to a value
+     *
+     * @param mixed $value Value to sanitize
+     * @param callable|string $sanitizer Sanitizer function or name
+     * @return mixed Sanitized value
+     */
+    private static function applySanitizer($value, $sanitizer)
+    {
+        if (is_callable($sanitizer)) {
+            return $sanitizer($value);
+        }
+
+        switch ($sanitizer) {
+            case 'sanitize_key':
+                return sanitize_key($value);
+            case 'sanitize_text_field':
+                return sanitize_text_field($value);
+            case 'sanitize_boolean':
+                return function_exists('rest_sanitize_boolean') ? rest_sanitize_boolean($value) : (bool) $value;
+            default:
+                return sanitize_text_field($value);
+        }
     }
 }
