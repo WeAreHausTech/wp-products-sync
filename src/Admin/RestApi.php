@@ -177,7 +177,7 @@ class RestApi
                 'vendureTaxonomyWp' => 'sanitize_key',
                 'vendureTaxonomyType' => function ($value) use ($vendureTaxonomyTypes) {
                     $value = sanitize_text_field($value);
-                    return in_array($value, $vendureTaxonomyTypes, true);
+                    return in_array($value, $vendureTaxonomyTypes, true) ? $value : 'collection';
                 },
                 'vendureTaxonomyCollectionId' => 'sanitize_text_field',
                 'vendureTaxonomyFacetCode' => 'sanitize_key',
