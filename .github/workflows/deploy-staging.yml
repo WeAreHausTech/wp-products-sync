@@ -1,0 +1,24 @@
+name: Deploy to wp-storefront
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number"
+        required: true
+        default: "dev"
+
+jobs:
+  deploy_to_staging:
+    name: Deploy to wp-storefront.haus.se
+    uses: ./.github/workflows/deploy.yml
+    with:
+      SERVER_NAME: "wp-storefront.haus.se"
+      SERVER_HOST: "srv01.haus.se"
+      SERVER_PORT: "22"
+      SERVER_USERNAME: "haus151"
+      SERVER_TARGET: "/home/haus151/www/wp-content/plugins/wp-products-sync"
+      SERVER_WP_DIR: "/home/haus151/www"
+      VERSION: ${{ inputs.version }}
+    secrets:
+      SERVER_PRIVATE_KEY: ${{ secrets.SERVER_PRIVATE_KEY }}
