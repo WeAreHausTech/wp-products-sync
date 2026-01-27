@@ -25,9 +25,6 @@ class VendureHelper
         $translations = [];
 
         foreach ($avalibleTranslations as $lang) {
-            if ($lang === $this->defaultLang) {
-                continue;
-            }
             $translations[$lang] = $this->getProductsByLang($lang);
         }
 
@@ -53,9 +50,9 @@ class VendureHelper
 
         do {
             $products = (new \WeAreHausTech\WpProductSync\Queries\Product)->get($lang, $skip, $batchSize);
-    
+
             $totalItems = $products['data']['products']['totalItems'];
-    
+
             if (!empty($products['data']['products']['items'])) {
                 $allProducts = array_merge($allProducts, $products['data']['products']['items']);
             }
@@ -98,9 +95,6 @@ class VendureHelper
         $collections = $this->getAllCollectionsByParentIds($this->defaultLang, [$rootCollection]);
 
         foreach ($avalibleTranslations as $lang) {
-            if ($lang === $this->defaultLang) {
-                continue;
-            }
             $translations[$lang] = $this->getAllCollectionsByParentIds($lang, [$rootCollection]);
         }
         //TO remove when vendure bug is fixed
@@ -125,7 +119,7 @@ class VendureHelper
         return $collections;
     }
 
-    public function getAllCollectionsByParentIds(string $lang, array $ids = []): array
+    public function getAllCollectionsByParentIds($lang, array $ids = []): array
     {
         $collections = [];
         $parentIds = $ids;
@@ -198,9 +192,6 @@ class VendureHelper
         $facets = $this->getFacetsFromVendure($this->defaultLang);
 
         foreach ($avalibleTranslations as $lang) {
-            if ($lang === $this->defaultLang) {
-                continue;
-            }
             $translations[$lang] = $this->getFacetsFromVendure($lang);
         }
 
