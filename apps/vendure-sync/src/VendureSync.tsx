@@ -40,6 +40,8 @@ export default function VendureSync() {
     },
   })
 
+  const { mutateAsync } = saveMutation
+
   useEffect(() => {
     const data = vendureSyncSettingsQuery.data
     if (data) {
@@ -114,7 +116,7 @@ export default function VendureSync() {
       return
     }
 
-    const result = await saveMutation.mutateAsync(validation.data)
+    const result = await mutateAsync(validation.data)
 
     if (result.success) {
       pushToast({
@@ -128,7 +130,7 @@ export default function VendureSync() {
         title: result.message || 'Failed to save vendure sync settings',
       })
     }
-  }, [taxonomies, settings, saveMutation, pushToast])
+  }, [taxonomies, settings, mutateAsync, pushToast])
 
   if (vendureSyncSettingsQuery.isPending) {
     return <LoadingState />
@@ -157,7 +159,7 @@ export default function VendureSync() {
 
             {taxonomies.length === 0 ? (
               <Text size="2" color="gray">
-                No mappings configured. Click "Add Mapping" to get started.
+                No mappings configured. Click on <strong>Add Mapping</strong> to get started.
               </Text>
             ) : (
               <Flex direction="column" gap="4">

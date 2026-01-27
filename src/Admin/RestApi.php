@@ -16,22 +16,22 @@ class RestApi
             '/vendure-sync-settings',
             [
                 [
-                    'methods'             => 'GET',
-                    'callback'            => [__CLASS__, 'getSettings'],
+                    'methods' => 'GET',
+                    'callback' => [__CLASS__, 'getSettings'],
                     'permission_callback' => function () {
                         return current_user_can('manage_options');
                     },
                 ],
                 [
-                    'methods'             => 'POST',
-                    'callback'            => [__CLASS__, 'saveSettings'],
+                    'methods' => 'POST',
+                    'callback' => [__CLASS__, 'saveSettings'],
                     'permission_callback' => function () {
                         return current_user_can('manage_options');
                     },
-                    'args'                => [
+                    'args' => [
                         'settings' => [
-                            'required'          => true,
-                            'type'              => 'object',
+                            'required' => true,
+                            'type' => 'object',
                             'validate_callback' => function ($param) {
                                 return is_array($param);
                             },
@@ -45,17 +45,17 @@ class RestApi
     public static function getSettings(): \WP_REST_Response
     {
         $option_name = 'wp_products_sync_settings';
-        $settings    = get_option($option_name, '');
+        $settings = get_option($option_name, '');
 
         if (empty($settings)) {
             return new \WP_REST_Response(
                 [
                     'success' => true,
-                    'data'    => [
+                    'data' => [
                         'taxonomies' => [],
-                        'settings'   => [
-                            'flushLinks'              => false,
-                            'softDelete'              => false,
+                        'settings' => [
+                            'flushLinks' => false,
+                            'softDelete' => false,
                             'taxonomySyncDescription' => false,
                         ],
                     ],
@@ -77,9 +77,9 @@ class RestApi
         if (!is_array($decoded)) {
             $decoded = [
                 'taxonomies' => [],
-                'settings'   => [
-                    'flushLinks'              => false,
-                    'softDelete'              => false,
+                'settings' => [
+                    'flushLinks' => false,
+                    'softDelete' => false,
                     'taxonomySyncDescription' => false,
                 ],
             ];
@@ -88,7 +88,7 @@ class RestApi
         return new \WP_REST_Response(
             [
                 'success' => true,
-                'data'    => $decoded,
+                'data' => $decoded,
             ],
             200
         );
@@ -117,9 +117,9 @@ class RestApi
             );
         }
 
-        $option_exists  = get_option($option_name) !== false;
+        $option_exists = get_option($option_name) !== false;
         $existing_value = $option_exists ? get_option($option_name, '') : '';
-        $value_changed  = $existing_value !== $json_string;
+        $value_changed = $existing_value !== $json_string;
 
         if (!$option_exists) {
             $updated = add_option($option_name, $json_string);

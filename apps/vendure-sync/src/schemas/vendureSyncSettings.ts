@@ -1,14 +1,16 @@
-import { z } from 'zod'
-import { flattenZodError } from '../lib/validation'
+import { z } from "zod";
+import { flattenZodError } from "../lib/validation";
 
 const TaxonomyMappingSchema = z.object({
-  vendureTaxonomyType: z.enum(['collection', 'facet'], {
-    message: 'Vendure data type is required',
+  vendureTaxonomyType: z.enum(["collection", "facet"], {
+    message: "Vendure data type is required",
   }),
-  vendureTaxonomyWp: z.string().min(1, { message: 'WordPress taxonomy is required' }),
+  vendureTaxonomyWp: z
+    .string()
+    .min(1, { message: "WordPress taxonomy is required" }),
   vendureTaxonomyCollectionId: z.string().optional(),
   vendureTaxonomyFacetCode: z.string().optional(),
-})
+});
 
 export const VendureSyncSettingsSchema = z
   .object({
@@ -28,31 +30,34 @@ export const VendureSyncSettingsSchema = z
   .refine(
     (data) => {
       return data.taxonomies.every((tax) => {
-        if (tax.vendureTaxonomyType === 'collection') {
-          return !!tax.vendureTaxonomyCollectionId
+        if (tax.vendureTaxonomyType === "collection") {
+          return !!tax.vendureTaxonomyCollectionId;
         }
-        if (tax.vendureTaxonomyType === 'facet') {
-          return !!tax.vendureTaxonomyFacetCode
+        if (tax.vendureTaxonomyType === "facet") {
+          return !!tax.vendureTaxonomyFacetCode;
         }
-        return true
-      })
+        return true;
+      });
     },
     {
-      message: 'Collection ID is required for collection type, Facet Code is required for facet type',
-      path: ['taxonomies'],
+      message:
+        "Collection ID is required for collection type, Facet Code is required for facet type",
+      path: ["taxonomies"],
     },
-  )
+  );
 
-export type VendureSyncSettings = z.infer<typeof VendureSyncSettingsSchema>
+export type VendureSyncSettings = z.infer<typeof VendureSyncSettingsSchema>;
 
-export type VendureSyncSettingsErrors = Record<string, string>
+export type VendureSyncSettingsErrors = Record<string, string>;
 
 export function validateVendureSyncSettings(
   input: unknown,
-): { success: true; data: VendureSyncSettings } | { success: false; errors: VendureSyncSettingsErrors } {
-  const result = VendureSyncSettingsSchema.safeParse(input)
+):
+  | { success: true; data: VendureSyncSettings }
+  | { success: false; errors: VendureSyncSettingsErrors } {
+  const result = VendureSyncSettingsSchema.safeParse(input);
   if (result.success) {
-    return { success: true, data: result.data }
+    return { success: true, data: result.data };
   }
-  return { success: false, errors: flattenZodError(result.error) as VendureSyncSettingsErrors }
+  return { success: false, errors: flattenZodError(result.error) };
 }
