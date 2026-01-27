@@ -1,0 +1,179 @@
+name: Deploy
+
+on:
+  workflow_call:
+    inputs:
+      SERVER_NAME:
+        description: "Server name"
+        required: false
+        type: string
+        default: "server"
+      SERVER_HOST:
+        description: "Server URL or IP"
+        required: true
+        type: string
+      SERVER_PORT:
+        description: "Server SSH port"
+        required: false
+        type: string
+        default: "22"
+      SERVER_USERNAME:
+        description: "Server SSH user name"
+        required: true
+        type: string
+      SERVER_TARGET:
+        description: "Server target path"
+        required: true
+        type: string
+      SERVER_WP_DIR:
+        description: "Server WordPress directory"
+        required: true
+        type: string
+      VERSION:
+        description: "Version number"
+        required: false
+        type: string
+        default: "dev"
+    secrets:
+      SERVER_PRIVATE_KEY:
+        required: true
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    name: Create Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install Dependencies
+        run: yarn install
+
+      # - name: Add HTTP basic auth credentials
+      #   run: echo '${{ secrets.COMPOSER_AUTH_JSON }}' > $GITHUB_WORKSPACE/auth.json
+
+      - name: Run composer install
+        run: composer install --no-dev --no-interaction --no-progress --optimize-autoloader
+
+      - name: Build Vendure Sync Frontend
+        run: yarn build
+
+      - name: Copy files to tmp folder
+        run: |
+          mkdir -p ./tmp
+          cp -r ./src ./apps ./vendor ./README.md ./composer.json ./composer.lock ./wp-products-sync.php ./tmp
+          # Copy built frontend assets
+          if [ -d "./apps/vendure-sync/dist" ]; then
+            cp -r ./apps/vendure-sync/dist ./tmp/apps/vendure-sync/
+          fi
+
+      - name: Set version in plugin file
+        run: |
+          if [[ "${{ github.ref }}" =~ ^refs/tags/ ]]; then
+            VERSION="${{ github.ref }}"
+            VERSION=${VERSION#refs/tags/}
+          else
+            VERSION="${{ inputs.VERSION || 'dev' }}"
+          fi
+          # Extract version number (remove 'v' prefix if present)
+          VERSION_NUMBER=$(echo "$VERSION" | sed 's/^v//')
+          sed -i "s/Version: [0-9.]*/Version: ${VERSION_NUMBER}/g" ./tmp/wp-products-sync.php
+          sed -i "s/define('WP_PRODUCTS_SYNC_VERSION', '[^']*')/define('WP_PRODUCTS_SYNC_VERSION', '${VERSION_NUMBER}')/g" ./tmp/wp-products-sync.php
+
+      - name: Set commit date and build date in plugin file
+        run: |
+          COMMIT_DATE=$(git log -1 --format=%cd --date=format:'%Y-%m-%d %H:%M:%S')
+          BUILD_DATE=$(date +"%Y-%m-%d %H:%M:%S")
+          # Add build info as PHP comments
+          echo "" >> ./tmp/wp-products-sync.php
+          echo "// Build Date: ${BUILD_DATE}" >> ./tmp/wp-products-sync.php
+          echo "// Commit Date: ${COMMIT_DATE}" >> ./tmp/wp-products-sync.php
+
+      - name: Create ZIP file
+        run: zip -r ./release.zip ./tmp
+
+      - name: Create Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # This token is provided by Actions, you do not need to create your own token
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          body: |
+          draft: false
+          prerelease: false
+
+      - name: Upload dist.zip to Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./release.zip
+          asset_name: release.zip
+          asset_content_type: application/zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload tmp folder as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tmp-folder
+          path: ./tmp
+          include-hidden-files: true
+
+  upload:
+    name: Upload to servers
+    needs: build
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+    steps:
+      - name: Download tmp folder
+        uses: actions/download-artifact@v4
+        with:
+          name: tmp-folder
+          path: ./tmp
+
+      - name: Echo content in tmp folder
+        run: ls -la ./tmp
+
+      - name: Setup SSH key and known hosts on ${{ inputs.SERVER_NAME }}
+        uses: kielabokkie/ssh-key-and-known-hosts-action@v1
+        with:
+          ssh-private-key: ${{ secrets.SERVER_PRIVATE_KEY }}
+          ssh-host: ${{ inputs.SERVER_HOST }}
+          ssh-port: ${{ inputs.SERVER_PORT }}
+
+      - name: Upload files to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ inputs.SERVER_HOST }}
+          username: ${{ inputs.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_PRIVATE_KEY }}
+          port: ${{ inputs.SERVER_PORT }}
+          source: ./tmp
+          target: ${{ inputs.SERVER_TARGET }}
+
+      - name: Save old version and copy new version
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ inputs.SERVER_HOST }}
+          username: ${{ inputs.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_PRIVATE_KEY }}
+          port: ${{ inputs.SERVER_PORT }}
+          script: |
+            rm -rf ${{ inputs.SERVER_TARGET }}/previous
+            rsync -azr ${{ inputs.SERVER_TARGET }} ${{ inputs.SERVER_TARGET }}/previous
+            rsync -avzr ${{ inputs.SERVER_TARGET }}/tmp/ ${{ inputs.SERVER_TARGET }}/
+            rm -rf ${{ inputs.SERVER_TARGET }}/tmp

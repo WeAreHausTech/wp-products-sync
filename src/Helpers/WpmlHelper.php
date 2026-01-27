@@ -17,7 +17,7 @@ class WpmlHelper
     {
 
         if (!$this->hasWpml()) {
-            return ['sv'];
+            return [];
         }
 
         $wpmlLanguages = apply_filters('wpml_active_languages', null, 'skip_missing=0');
@@ -33,21 +33,10 @@ class WpmlHelper
         return $avalibleTranslations;
     }
 
-    public function getCurrentLang()
-    {
-        $currentLang = apply_filters('wpml_current_language', null);
-
-        if (!isset($currentLang)) {
-            return 'sv';
-        }
-
-        return $currentLang;
-    }
-
     public function getDefaultLanguage()
     {
         if (!$this->hasWpml()) {
-            return 'sv';
+            return null;
         }
 
         return apply_filters('wpml_default_language', null);
@@ -56,7 +45,7 @@ class WpmlHelper
     public function getTermLanguage($termId, $taxonomy)
     {
         if (!$this->hasWpml()) {
-            return 'sv';
+            return null;
         }
 
         $wpml_language_code = apply_filters(

@@ -97,7 +97,7 @@ class Relations
             if ($this->useWpml) {
                 $returnData[$id]['ids'][$data['lang']] = $data['ID'];
             } else {
-                $returnData[$id]['ids']['sv'] = $data['ID'];
+                $returnData[$id]['ids'][$this->defaultLang] = $data['ID'];
             }
         }
 
@@ -167,7 +167,7 @@ class Relations
                 $wpTermId = $facets[$facetValueId]["ids"][$lang];
                 $taxonomy = $facets[$facetValueId]["taxonomy"];
 
-              wp_set_object_terms($wpProductId, (int) $wpTermId, $taxonomy);
+                wp_set_object_terms($wpProductId, (int) $wpTermId, $taxonomy);
             }
         }
     }

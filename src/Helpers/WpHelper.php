@@ -288,10 +288,11 @@ class WpHelper
         global $wpdb;
         $terms = $wpdb->prefix . 'terms';
         $termmeta = $wpdb->prefix . 'termmeta';
+        $termTaxonomy = $wpdb->prefix . 'term_taxonomy';
         if ($this->useWpml) {
             return $wpdb->prepare(
                 "SELECT tt.term_id, tt.parent, t.name, t.slug, tm.meta_value as vendure_collection_id, tr.language_code as lang, tm2.meta_value as vendure_updated_at, tm3.meta_value as vendure_soft_deleted
-             FROM wp_term_taxonomy tt 
+             FROM $termTaxonomy tt 
              LEFT JOIN $terms t ON tt.term_id = t.term_id 
              LEFT JOIN $termmeta tm ON tt.term_id = tm.term_id
                 AND tm.meta_key = 'vendure_collection_id'
@@ -309,7 +310,7 @@ class WpHelper
         } else {
             return $wpdb->prepare(
                 "SELECT tt.term_id, tt.parent, t.name, t.slug, tm.meta_value as vendure_collection_id, tm2.meta_value as vendure_updated_at,  tm3.meta_value as vendure_soft_deleted
-             FROM wp_term_taxonomy tt 
+             FROM $termTaxonomy tt 
              LEFT JOIN $terms t ON tt.term_id = t.term_id 
              LEFT JOIN $termmeta tm ON tt.term_id = tm.term_id
                 AND tm.meta_key = 'vendure_collection_id'
@@ -393,11 +394,12 @@ class WpHelper
         global $wpdb;
         $terms = $wpdb->prefix . 'terms';
         $termmeta = $wpdb->prefix . 'termmeta';
+        $termTaxonomy = $wpdb->prefix . 'term_taxonomy';
 
         if ($this->useWpml) {
             return $wpdb->prepare(
                 "SELECT tt.term_id, t.name, tm.meta_value as vendure_term_id, tr.language_code as lang, tm2.meta_value as vendure_updated_at,  tm3.meta_value as vendure_soft_deleted
-                FROM wp_term_taxonomy tt 
+                FROM $termTaxonomy tt 
                 LEFT JOIN $terms t ON tt.term_id = t.term_id 
                 LEFT JOIN $termmeta tm ON tt.term_id = tm.term_id
                     AND tm.meta_key = 'vendure_term_id'
@@ -416,7 +418,7 @@ class WpHelper
         } else {
             return $wpdb->prepare(
                 "SELECT tt.term_id, t.name, tm.meta_value as vendure_term_id, tm2.meta_value as vendure_updated_at,  tm3.meta_value as vendure_soft_deleted
-                FROM wp_term_taxonomy tt 
+                FROM $termTaxonomy tt 
                 LEFT JOIN $terms t ON tt.term_id = t.term_id 
                 LEFT JOIN $termmeta tm ON tt.term_id = tm.term_id
                     AND tm.meta_key = 'vendure_term_id'
@@ -487,10 +489,11 @@ class WpHelper
         $softDeleteCondition = $softDelete ? "AND (tm2.meta_value != '1')" : "";
 
         global $wpdb;
+        $termTaxonomy = $wpdb->prefix . 'term_taxonomy';
         if ($this->useWpml) {
             return $wpdb->prepare(
                 "SELECT tt.term_id
-                FROM wp_term_taxonomy tt
+                FROM $termTaxonomy tt
                 LEFT JOIN {$wpdb->prefix}icl_translations icl ON tt.term_id = icl.element_id AND icl.element_type = %s
                 LEFT JOIN {$wpdb->prefix}termmeta tm ON tt.term_id = tm.term_id AND tm.meta_key = %s
                 LEFT JOIN {$wpdb->prefix}termmeta tm2 ON tt.term_id = tm2.term_id AND tm.meta_key = 'vendure_soft_deleted'
@@ -509,7 +512,7 @@ class WpHelper
         } else {
             return $wpdb->prepare(
                 "SELECT tt.term_id
-                FROM wp_term_taxonomy tt
+                FROM $termTaxonomy tt
                 LEFT JOIN {$wpdb->prefix}termmeta tm ON tt.term_id = tm.term_id AND tm.meta_key = %s
                 LEFT JOIN {$wpdb->prefix}termmeta tm2 ON tt.term_id = tm2.term_id AND tm.meta_key = 'vendure_soft_deleted'
                 WHERE tt.taxonomy = %s
@@ -651,19 +654,19 @@ class WpHelper
 
         $wpdb->query(
             $wpdb->prepare(
-                "DELETE FROM $wpdb->termmeta WHERE term_id = %d",
+                "DELETE FROM {$wpdb->prefix}termmeta WHERE term_id = %d",
                 $term_id
             )
         );
 
         $wpdb->delete(
-            $wpdb->term_taxonomy,
+            $wpdb->prefix . 'term_taxonomy',
             array('term_id' => $term_id),
             array('%d')
         );
 
         $wpdb->delete(
-            $wpdb->terms,
+            $wpdb->prefix . 'terms',
             array('term_id' => $term_id),
             array('%d')
         );

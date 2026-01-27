@@ -4,203 +4,225 @@ namespace WeAreHausTech\WpProductSync\Admin;
 
 class OptionPage
 {
+    /**
+     * Check if the main Haus Storefront plugin is installed
+     * Checks for the menu slug and also for potential constants/functions
+     *
+     * @return bool
+     */
+    private static function isMainPluginInstalled(): bool
+    {
+        // First check if a constant from the main plugin exists
+        if (defined('HAUS_ECOM_PLUGIN_PATH')) {
+            return true;
+        }
+
+        // Check if a function from the main plugin exists
+        if (function_exists('haus_storefront_render_page')) {
+            return true;
+        }
+
+        // Fallback: Check if the main plugin menu exists in the global menu array
+        global $menu;
+        if (isset($menu) && is_array($menu)) {
+            foreach ($menu as $menu_item) {
+                if (isset($menu_item[2]) && $menu_item[2] === 'haus-storefront') {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Get plugin version for cache busting
+     */
+    private static function getVersion(): string
+    {
+        if (function_exists('get_plugin_data')) {
+            $plugin_data = get_plugin_data(WP_PRODUCTS_SYNC_PLUGIN_DIR . '/wp-products-sync.php');
+            if (!empty($plugin_data['Version']) && $plugin_data['Version'] !== '{{VERSION}}') {
+                return $plugin_data['Version'];
+            }
+        }
+
+        $manifestPath = WP_PRODUCTS_SYNC_PLUGIN_DIR . '/apps/vendure-sync/dist/.vite/manifest.json';
+        if (file_exists($manifestPath)) {
+            return (string) filemtime($manifestPath);
+        }
+
+        return (string) time();
+    }
+
+    /**
+     * Enqueue admin assets
+     */
+    public static function enqueueAssets(string $hook): void
+    {
+        // Only load on our admin page
+        if ($hook !== 'toplevel_page_vendure-sync' && $hook !== 'haus-storefront_page_vendure-sync') {
+            return;
+        }
+
+        $manifestPath = WP_PRODUCTS_SYNC_PLUGIN_DIR . '/apps/vendure-sync/dist/.vite/manifest.json';
+
+        if (!file_exists($manifestPath)) {
+            add_action('admin_notices', function () {
+                echo '<div class="notice notice-error is-dismissible"><p>'
+                    . esc_html__('Vendure Sync build files not found. Please run: yarn build', 'wp-products-sync')
+                    . '</p></div>';
+            });
+            return;
+        }
+
+        $manifestContent = file_get_contents($manifestPath);
+        $manifest = json_decode($manifestContent, true);
+
+        if (!$manifest || !is_array($manifest)) {
+            add_action('admin_notices', function () {
+                echo '<div class="notice notice-error is-dismissible"><p>'
+                    . esc_html__('Vendure Sync manifest file is invalid. Please check your build: yarn build', 'wp-products-sync')
+                    . '</p></div>';
+            });
+            return;
+        }
+
+        $version = self::getVersion();
+
+        $entry = null;
+        foreach ($manifest as $key => $manifestEntry) {
+            if (isset($manifestEntry['isEntry']) && $manifestEntry['isEntry'] === true) {
+                $entry = $manifestEntry;
+                break;
+            }
+            // Also check for 'main' entry
+            if (strpos($key, 'main') !== false && isset($manifestEntry['file'])) {
+                $entry = $manifestEntry;
+                break;
+            }
+        }
+
+        if (!$entry) {
+            // Try to find any entry file
+            foreach ($manifest as $manifestEntry) {
+                if (isset($manifestEntry['file']) && strpos($manifestEntry['file'], '.js') !== false) {
+                    $entry = $manifestEntry;
+                    break;
+                }
+            }
+        }
+
+        if (!$entry || !isset($entry['file'])) {
+            add_action('admin_notices', function () {
+                echo '<div class="notice notice-error is-dismissible"><p>'
+                    . esc_html__('Vendure Sync main entry point not found. Please check your build: yarn build', 'wp-products-sync')
+                    . '</p></div>';
+            });
+            return;
+        }
+
+        wp_enqueue_script(
+            'vendure-sync',
+            WP_PRODUCTS_SYNC_PLUGIN_URL . 'apps/vendure-sync/dist/' . $entry['file'],
+            [],
+            $version,
+            true
+        );
+
+        if (function_exists('wp_script_add_data')) {
+            wp_script_add_data('vendure-sync', 'type', 'module');
+        }
+
+        if (isset($entry['css']) && is_array($entry['css'])) {
+            foreach ($entry['css'] as $cssFile) {
+                wp_enqueue_style(
+                    'vendure-sync-' . basename($cssFile, '.css'),
+                    WP_PRODUCTS_SYNC_PLUGIN_URL . 'apps/vendure-sync/dist/' . $cssFile,
+                    [],
+                    $version
+                );
+            }
+        }
+
+        if (isset($entry['imports']) && is_array($entry['imports'])) {
+            foreach ($entry['imports'] as $importKey) {
+                if (isset($manifest[$importKey]['file'])) {
+                    wp_enqueue_script(
+                        'vendure-sync-' . $importKey,
+                        WP_PRODUCTS_SYNC_PLUGIN_URL . 'apps/vendure-sync/dist/' . $manifest[$importKey]['file'],
+                        [],
+                        $version,
+                        true
+                    );
+                    if (function_exists('wp_script_add_data')) {
+                        wp_script_add_data('vendure-sync-' . $importKey, 'type', 'module');
+                    }
+                }
+            }
+        }
+
+        wp_register_style('vendure-sync-inline-style', false);
+        wp_enqueue_style('vendure-sync-inline-style');
+
+
+        // Inject API configuration
+        $api_url = rest_url('wp-products-sync/v1/vendure-sync-settings');
+        $nonce = wp_create_nonce('wp_rest');
+        wp_add_inline_script(
+            'vendure-sync',
+            sprintf(
+                'window.vendureSync = { apiUrl: %s, nonce: %s };',
+                wp_json_encode($api_url),
+                wp_json_encode($nonce)
+            ),
+            'before'
+        );
+    }
+
+    /**
+     * Render the admin settings page
+     */
+    public static function renderPage(): void
+    {
+        ?>
+        <div id="haus-storefront-container" style="padding: 20px;">
+            <div id="haus-storefront-navigation"></div>
+            <div id="vendure-sync-root">
+                <div class="vendure-sync-loading-message" style="text-align:center;">
+                    <span>Loading Vendure Sync Settings...</span>
+                </div>
+            </div>
+        </div>
+        <?php
+    }
+
     public static function init(): void
     {
-        add_action('acf/include_fields', function () {
-            if (!function_exists('acf_add_local_field_group')) {
-                return;
+        // Enqueue assets
+        add_action('admin_enqueue_scripts', [__CLASS__, 'enqueueAssets']);
+
+        // Use admin_menu hook with late priority to ensure main plugin menu is registered first
+        add_action('admin_menu', function () {
+            if (self::isMainPluginInstalled()) {
+                // Add as submenu under Haus Storefront
+                add_submenu_page(
+                    'haus-storefront',
+                    __('Sync Settings', 'wp-products-sync'),
+                    __('Sync Settings', 'wp-products-sync'),
+                    'manage_options',
+                    'vendure-sync',
+                    [__CLASS__, 'renderPage']
+                );
+            } else {
+                add_menu_page(
+                    __('Sync Settings', 'wp-products-sync'),
+                    __('Sync Settings', 'wp-products-sync'),
+                    'manage_options',
+                    'vendure-sync',
+                    [__CLASS__, 'renderPage']
+                );
             }
-
-            acf_add_local_field_group([
-                'key'                   => 'group_6798ee15c123f',
-                'title'                 => 'Vendure sync settings',
-                'fields'                => [
-                    [
-                        'key'               => 'field_6799d65c2d13f',
-                        'label'             => 'Mappings for Taxonomies',
-                        'name'              => '',
-                        'aria-label'        => '',
-                        'type'              => 'tab',
-                        'instructions'      => '',
-                        'required'          => 0,
-                        'conditional_logic' => 0,
-                        'wrapper'           => [
-                            'width' => '',
-                            'class' => '',
-                            'id'    => '',
-                        ],
-                        'placement'         => 'left',
-                        'endpoint'          => 0,
-                        'selected'          => 0,
-                        'wpml_cf_preferences' => 1,
-                    ],
-                    [
-                        'key'                   => 'field_vendure-taxonomies-facet',
-                        'label'                 => 'Facets',
-                        'name'                  => 'vendure-taxonomies-facet',
-                        'aria-label'            => '',
-                        'type'                  => 'repeater',
-                        'instructions'          => 'Use this section to define how Vendure data facets should be mapped to WordPress taxonomies.',
-                        'required'              => 0,
-                        'conditional_logic'     => 0,
-                        'wrapper'               => [
-                            'width' => '',
-                            'class' => '',
-                            'id'    => '',
-                        ],
-                        'layout'                => 'table',
-                        'pagination'            => 0,
-                        'min'                   => 0,
-                        'max'                   => 0,
-                        'collapsed'             => '',
-                        'button_label'          => 'Lägg till rad',
-                        'rows_per_page'         => 20,
-                        'wpml_cf_preferences'   => 1,
-                        'sub_fields'            => [
-                            [
-                                'key'                   => 'field_vendure-taxonomies-facet-taxonomy',
-                                'label'                 => 'Taxonomy in wp',
-                                'name'                  => 'vendure-taxonomy-wp',
-                                'aria-label'            => '',
-                                'type'                  => 'text',
-                                'instructions'          => '', 
-                                'parent_repeater'       => 'field_vendure-taxonomies-facet',
-                                'wpml_cf_preferences'   => 1,
-                            ],
-                            [
-                                'key'                   => 'field_vendure-taxonomies-facet-facetCode',
-                                'label'                 => 'Factet code in Vendure',
-                                'name'                  => 'vendure-taxonomy-facetCode',
-                                'aria-label'            => '',
-                                'type'                  => 'text',
-                                'instructions'          => '',
-                                'required'              => 0,
-                                'parent_repeater'       => 'field_vendure-taxonomies-facet',
-                                'wpml_cf_preferences'   => 1,
-                            ],
-                        ],
-                    ],
-                    [
-                        'key'                   => 'field_vendure-taxonomies-collection',
-                        'label'                 => 'Collections',
-                        'name'                  => 'vendure-taxonomies-collection',
-                        'aria-label'            => '',
-                        'type'                  => 'repeater',
-                        'instructions'          => 'Use this section to define how Vendure data collections should be mapped to WordPress taxonomies. Specify the top-level Vendure collection ID whose child collections should be synced',
-                        'required'              => 0,
-                        'conditional_logic'     => 0,
-                        'layout'                => 'table',
-                        'collapsed'             => '',
-                        'button_label'          => 'Lägg till rad',
-                        'rows_per_page'         => 20,
-                        'wpml_cf_preferences'   => 1,
-                        'sub_fields'            => [
-                            [
-                                'key'                   => 'field_vendure-taxonomies-collection-taxonomy',
-                                'label'                 => 'Taxonomy in wp',
-                                'name'                  => 'vendure-taxonomy-wp',
-                                'aria-label'            => '',
-                                'type'                  => 'text',
-                                'instructions'          => '',
-                                'parent_repeater'       => 'field_vendure-taxonomies-collection',
-                                'wpml_cf_preferences'   => 1,
-                            ],
-                            [
-                                'key'                   => 'field_vendure-taxonomies-collection-collectionId',
-                                'label'                 => 'Root collection id',
-                                'name'                  => 'vendure-taxonomy-collectionId',
-                                'aria-label'            => '',
-                                'type'                  => 'text',
-                                'instructions'          => '',
-                                'required'              => 0,
-                                'parent_repeater'       => 'field_vendure-taxonomies-collection',
-                                'wpml_cf_preferences'   => 1,
-                            ],
-                        ],
-                    ],
-                    [
-                        'key'                   => 'field_6799d686a2c5b',
-                        'label'                 => 'Settings',
-                        'name'                  => '',
-                        'aria-label'            => '',
-                        'type'                  => 'tab',
-                        'instructions'          => '',
-                        'placement'             => 'left',
-                        'wpml_cf_preferences'   => 1,
-                    ],
-                    [
-                        'key'                   => 'field_6799d41d3b55a',
-                        'label'                 => 'Settings',
-                        'name'                  => 'vendure-settings',
-                        'aria-label'            => '',
-                        'type'                  => 'group',
-                        'instructions'          => '',
-                        'layout'                => 'block',
-                        'wpml_cf_preferences'   => 1,
-                        'sub_fields'            => [
-                            [
-                                'key'                   => 'field_vendure-settings-flushlinks',
-                                'label'                 => 'Flush Links on update',
-                                'name'                  => 'vendure-settings-flushlinks',
-                                'aria-label'            => '',
-                                'type'                  => 'true_false',
-                                'instructions'          => 'Enable this option to flush WordPress rewrite rules whenever a term or product is updated during the sync. This is necessary if you are using custom rewrite rules for taxonomies or products to ensure the URL structure remains correct.',
-                                'required'              => 0,
-                                'wpml_cf_preferences'   => 1,                            ],
-                            [
-                                'key'                   => 'field_vendure-settings-softDelete',
-                                'label'                 => 'Enable Soft Delete for Terms',
-                                'name'                  => 'vendure-settings-softDelete',
-                                'aria-label'            => '',
-                                'type'                  => 'true_false',
-                                'instructions'          => 'When enabled, terms will not be deleted during the sync. Instead, they will be marked as "soft deleted," and their pages will no longer be accessible.',
-                                'message'               => '',
-                                'default_value'         => 1,
-                                'wpml_cf_preferences'   => 1,
-                            ],
-                            [
-                                'key'                   => 'field_vendure-settings-taxonomySyncDescription',
-                                'label'                 => 'Sync description for taxonomies',
-                                'name'                  => 'vendure-settings-taxonomySyncDescription',
-                                'aria-label'            => '',
-                                'type'                  => 'true_false',
-                                'instructions'          => 'When enabled, terms will not be deleted during the sync. Instead, they will be marked as "soft deleted," and their pages will no longer be accessible.',
-                                'message'               => '',
-                                'default_value'         => 1,
-                                'wpml_cf_preferences'   => 1,
-                            ],
-                        ],
-                    ],
-                ],
-                'location'              => [
-                    [
-                        [
-                            'param'    => 'options_page',
-                            'operator' => '==',
-                            'value'    => 'vendure-sync',
-                        ],
-                    ],
-                ],
-                'menu_order'            => 0,
-                'position'              => 'normal',
-                'style'                 => 'default',
-                'label_placement'       => 'top',
-                'instruction_placement' => 'label',
-                'hide_on_screen'        => '',
-                'active'                => true,
-                'description'           => '',
-                'show_in_rest'          => 0,
-                'wpml_cf_preferences'   => 1,
-            ]);
-        });
-
-        add_action('acf/init', function () {
-            acf_add_options_page([
-                'page_title'  => 'Vendure sync',
-                'menu_slug'   => 'vendure-sync',
-                'parent_slug' => 'options-general.php',
-                'redirect'    => false,
-            ]);
-        });
+        }, 100);
     }
 }

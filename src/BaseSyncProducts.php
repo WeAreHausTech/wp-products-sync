@@ -19,5 +19,6 @@ class BaseSyncProducts
 
         \WeAreHausTech\WpProductSync\Admin\AdminSettingsUI::init();
         \WeAreHausTech\WpProductSync\Admin\OptionPage::init();
+        \WeAreHausTech\WpProductSync\Admin\RestApi::init();
     }
 }
