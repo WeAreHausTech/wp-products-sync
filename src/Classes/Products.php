@@ -63,6 +63,7 @@ class Products
         $metaInput = [
             'vendure_id' => $vendureId,
             'vendure_updated_at' => $updatedAt,
+            'vendure_description' => $description,
         ];
 
         $customFields = $this->getCustomFields($customFields);
@@ -73,7 +74,6 @@ class Products
             'post_status' => 'publish',
             'post_type' => 'produkter',
             'post_name' => $slug,
-            'post_content' => $description,
             'meta_input' => $metaInput,
 
         ]);
@@ -109,11 +109,11 @@ class Products
 
         $data = [];
 
-        if(!$customFields){
+        if (!$customFields) {
             return $data;
         }
 
-        forEach($customFields as $key => $value){
+        foreach ($customFields as $key => $value) {
             if (is_array($value)) {
                 $data[$key] = $value['source'];
             } else {
@@ -199,21 +199,21 @@ class Products
 
     }
 
-    public function updatePost($postId, $postTitle, $postContent, $postName, $vendureId, $updatedAt, $customFields = null)
+    public function updatePost($postId, $postTitle, $postDescription, $postName, $vendureId, $updatedAt, $customFields = null)
     {
 
         $metaInput = [
             'vendure_updated_at' => $updatedAt,
+            'vendure_description' => $postDescription,
         ];
 
-        $customFields =  $this->getCustomFields($customFields);
+        $customFields = $this->getCustomFields($customFields);
         $metaInput = array_merge($metaInput, $customFields);
 
         wp_update_post([
             'ID' => $postId,
             'post_title' => $postTitle,
             'post_name' => $postName,
-            'post_content' => $postContent,
             'meta_input' => $metaInput
         ]);
 
