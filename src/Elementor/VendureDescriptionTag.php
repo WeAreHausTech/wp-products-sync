@@ -42,6 +42,9 @@ if (class_exists('\Elementor\Core\DynamicTags\Tag')) {
                 $post_id = get_the_ID();
             }
 
+            if (empty($post_id)) {
+                return;
+            }
             $description = get_post_meta($post_id, 'vendure_description', true);
 
             if (empty($description)) {
