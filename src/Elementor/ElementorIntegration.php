@@ -52,6 +52,7 @@ class ElementorIntegration
         }
         $tags = [
             VendureDescriptionTag::class,
+            VendureProductNameTag::class,
         ];
 
         foreach ($tags as $tag_class) {
